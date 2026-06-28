@@ -50,7 +50,6 @@ public class Player : MonoBehaviour
 {
     moveInput = Vector2.ClampMagnitude(input, 1f);
 
-    Debug.Log("Player MoveInput : " + moveInput);
 }
 
 public void SetRun(bool value)
