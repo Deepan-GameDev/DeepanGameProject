@@ -9,8 +9,6 @@ public class Player : MonoBehaviour
     public float walkSpeed = 4f;
     public float runSpeed = 7f;
     public float crouchSpeed = 2f;
-    public KeyCode runKey = KeyCode.LeftShift;
-    public KeyCode crouchKey = KeyCode.LeftControl;
 
     [Header("Body")]
     public float standingHeight = 1.85f;
@@ -55,7 +53,6 @@ public class Player : MonoBehaviour
 public void ToggleRun()
 {
     runPressed = !runPressed;
-    Debug.Log("ToggleRun = " + runPressed + " Frame: " + Time.frameCount);
 }
 
 public void SetCrouch(bool value)
@@ -99,29 +96,15 @@ public void SetCrouch(bool value)
         }
     }
 
-   void Update()
-{
+  void Update()
 {
     isCrouching = crouchPressed || !CanStandUp();
 
     UpdateCrouch();
 
     UpdateFootsteps();
-}
-
-    isCrouching = crouchPressed || !CanStandUp();
-
-    UpdateCrouch();
-
-  //  if (!IsMoving())
- //   {
-  //      runPressed = false;
-  //  }
-
-    UpdateFootsteps();
-}
-
-    void FixedUpdate()
+}    
+  void FixedUpdate()
     {
         Quaternion targetRotation = rb.rotation;
         if (Mathf.Abs(pendingYaw) > 0.001f)
