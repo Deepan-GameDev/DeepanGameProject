@@ -36,6 +36,8 @@ public class Player : MonoBehaviour
     private float footstepTimer;
     private float pendingYaw;
     private bool isCrouching;
+    private bool runPressed;
+    private bool crouchPressed;
     private Vector2 moveInput;
     private readonly Collider[] standCheckHits = new Collider[8];
 
@@ -43,6 +45,25 @@ public class Player : MonoBehaviour
     {
         pendingYaw += yawDegrees;
     }
+
+  public void SetMoveInput(Vector2 input)
+{
+    moveInput = Vector2.ClampMagnitude(input, 1f);
+
+    Debug.Log("Player MoveInput : " + moveInput);
+}
+
+public void SetRun(bool value)
+{
+    runPressed = value;
+}
+
+public void SetCrouch(bool value)
+{
+    crouchPressed = value;
+}
+
+    
 
     void Awake()
     {
@@ -78,16 +99,24 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-        moveInput = Vector2.ClampMagnitude(moveInput, 1f);
+   void Update()
+{
+#if UNITY_EDITOR
 
-        bool wantsToCrouch = Input.GetKey(crouchKey) || Input.GetKey(KeyCode.C);
-        isCrouching = wantsToCrouch || !CanStandUp();
-        UpdateCrouch();
-        UpdateFootsteps();
-    }
+    moveInput = new Vector2(
+        Input.GetAxisRaw("Horizontal"),
+        Input.GetAxisRaw("Vertical"));
+
+    runPressed = Input.GetKey(runKey);
+    crouchPressed = Input.GetKey(crouchKey);
+
+#endif
+
+    isCrouching = crouchPressed || !CanStandUp();
+
+    UpdateCrouch();
+    UpdateFootsteps();
+}
 
     void FixedUpdate()
     {
@@ -122,7 +151,7 @@ public class Player : MonoBehaviour
 
     private bool IsRunning()
     {
-        return Input.GetKey(runKey) && IsMoving() && !isCrouching;
+        return runPressed && IsMoving() && !isCrouching;
     }
 
     private bool IsGrounded()
