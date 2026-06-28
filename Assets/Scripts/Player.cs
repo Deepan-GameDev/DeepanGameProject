@@ -101,17 +101,13 @@ public void SetCrouch(bool value)
 
    void Update()
 {
-#if UNITY_EDITOR
+{
+    isCrouching = crouchPressed || !CanStandUp();
 
-    // Only keyboard movement
-    if (moveInput == Vector2.zero)
-    {
-        moveInput = new Vector2(
-            Input.GetAxisRaw("Horizontal"),
-            Input.GetAxisRaw("Vertical"));
-    }
+    UpdateCrouch();
 
-#endif
+    UpdateFootsteps();
+}
 
     isCrouching = crouchPressed || !CanStandUp();
 
