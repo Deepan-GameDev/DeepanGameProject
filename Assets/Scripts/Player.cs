@@ -22,8 +22,9 @@ public class Player : MonoBehaviour
     public float crouchingCameraHeight = 0.95f;
     public LayerMask groundLayers = ~0;
 
-    [Header("Running Footsteps")]
-    public AudioClip runningFootstepClip;
+    [Header("Footsteps")]
+    public AudioClip footstepClip;
+    public float walkingStepInterval = 0.52f;
     public float runningStepInterval = 0.32f;
     public float footstepVolume = 0.55f;
     public Vector2 footstepPitchRange = new Vector2(0.92f, 1.08f);
@@ -33,9 +34,15 @@ public class Player : MonoBehaviour
     private AudioSource footstepSource;
     private AudioClip generatedFootstepClip;
     private float footstepTimer;
+    private float pendingYaw;
     private bool isCrouching;
     private Vector2 moveInput;
     private readonly Collider[] standCheckHits = new Collider[8];
+
+    public void AddYawInput(float yawDegrees)
+    {
+        pendingYaw += yawDegrees;
+    }
 
     void Awake()
     {
@@ -56,16 +63,16 @@ public class Player : MonoBehaviour
         capsule.center = Vector3.up * (standingHeight * 0.5f);
 
         footstepSource.playOnAwake = false;
-        footstepSource.spatialBlend = 1f;
-        footstepSource.minDistance = 1f;
-        footstepSource.maxDistance = 12f;
+        footstepSource.loop = false;
+        footstepSource.spatialBlend = 0f;
+        footstepSource.volume = footstepVolume;
 
         if (cameraTransform == null && Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
         }
 
-        if (runningFootstepClip == null)
+        if (footstepClip == null)
         {
             generatedFootstepClip = CreateFootstepClip();
         }
@@ -79,14 +86,22 @@ public class Player : MonoBehaviour
         bool wantsToCrouch = Input.GetKey(crouchKey) || Input.GetKey(KeyCode.C);
         isCrouching = wantsToCrouch || !CanStandUp();
         UpdateCrouch();
-        UpdateRunningFootsteps();
+        UpdateFootsteps();
     }
 
     void FixedUpdate()
     {
+        Quaternion targetRotation = rb.rotation;
+        if (Mathf.Abs(pendingYaw) > 0.001f)
+        {
+            targetRotation *= Quaternion.Euler(0f, pendingYaw, 0f);
+            rb.MoveRotation(targetRotation);
+            pendingYaw = 0f;
+        }
+
         float speed = GetCurrentSpeed();
         Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
-        Vector3 worldMove = transform.TransformDirection(localMove) * speed * Time.fixedDeltaTime;
+        Vector3 worldMove = targetRotation * localMove * speed * Time.fixedDeltaTime;
         rb.MovePosition(rb.position + worldMove);
     }
 
@@ -100,9 +115,14 @@ public class Player : MonoBehaviour
         return IsRunning() ? runSpeed : walkSpeed;
     }
 
+    private bool IsMoving()
+    {
+        return moveInput.sqrMagnitude > 0.01f;
+    }
+
     private bool IsRunning()
     {
-        return Input.GetKey(runKey) && moveInput.sqrMagnitude > 0.01f;
+        return Input.GetKey(runKey) && IsMoving() && !isCrouching;
     }
 
     private bool IsGrounded()
@@ -151,9 +171,9 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void UpdateRunningFootsteps()
+    private void UpdateFootsteps()
     {
-        if (!IsRunning() || isCrouching || !IsGrounded())
+        if (!IsMoving() || isCrouching || !IsGrounded())
         {
             footstepTimer = 0f;
             return;
@@ -166,41 +186,42 @@ public class Player : MonoBehaviour
         }
 
         PlayFootstep();
-        footstepTimer = runningStepInterval;
+        footstepTimer = IsRunning() ? runningStepInterval : walkingStepInterval;
     }
 
     private void PlayFootstep()
     {
-        AudioClip clip = runningFootstepClip != null ? runningFootstepClip : generatedFootstepClip;
+        AudioClip clip = footstepClip != null ? footstepClip : generatedFootstepClip;
         if (clip == null)
         {
             return;
         }
 
-        footstepSource.pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
+        float pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
+        footstepSource.pitch = IsRunning() ? pitch * 1.05f : pitch;
         footstepSource.PlayOneShot(clip, footstepVolume);
     }
 
     private AudioClip CreateFootstepClip()
     {
         const int sampleRate = 22050;
-        const float length = 0.12f;
+        const float length = 0.13f;
         int sampleCount = Mathf.RoundToInt(sampleRate * length);
         float[] samples = new float[sampleCount];
 
         for (int i = 0; i < sampleCount; i++)
         {
             float t = i / (float)sampleRate;
-            float fade = Mathf.Exp(-t * 28f);
-            float lowThump = Mathf.Sin(2f * Mathf.PI * 95f * t) * 0.75f;
-            float scrape = Random.Range(-0.35f, 0.35f);
-            samples[i] = (lowThump + scrape) * fade * 0.45f;
+            float fade = Mathf.Exp(-t * 32f);
+            float thump = Mathf.Sin(2f * Mathf.PI * 85f * t) * 0.8f;
+            float tap = Mathf.Sin(2f * Mathf.PI * 210f * t) * 0.22f;
+            float texture = Random.Range(-0.18f, 0.18f);
+            samples[i] = (thump + tap + texture) * fade * 0.55f;
         }
 
-        AudioClip clip = AudioClip.Create("Generated Running Footstep", sampleCount, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("Generated Footstep", sampleCount, 1, sampleRate, false);
         clip.SetData(samples, 0);
         return clip;
     }
 }
-
 

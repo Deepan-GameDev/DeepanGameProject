@@ -4,7 +4,9 @@ public class PlayerFollowCamera : MonoBehaviour
 {
     public float mouseSensitivity = 100f;
     public Transform playerBody;
+    public bool invertY;
 
+    private Player player;
     private float xRotation;
 
     void Start()
@@ -15,6 +17,11 @@ public class PlayerFollowCamera : MonoBehaviour
         if (playerBody == null && transform.parent != null)
         {
             playerBody = transform.parent;
+        }
+
+        if (playerBody != null)
+        {
+            player = playerBody.GetComponent<Player>();
         }
     }
 
@@ -28,10 +35,17 @@ public class PlayerFollowCamera : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        xRotation -= mouseY;
+        xRotation += invertY ? mouseY : -mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        playerBody.Rotate(Vector3.up * mouseX, Space.World);
+
+        if (player != null)
+        {
+            player.AddYawInput(mouseX);
+        }
+        else
+        {
+            playerBody.Rotate(Vector3.up * mouseX, Space.World);
+        }
     }
 }
