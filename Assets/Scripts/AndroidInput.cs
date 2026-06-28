@@ -13,6 +13,7 @@ public class AndroidInput : MonoBehaviour
 
     public void RunButton()
     {
+        Debug.Log("RunButton Called - Frame: " + Time.frameCount);
         player.ToggleRun();
     }
 

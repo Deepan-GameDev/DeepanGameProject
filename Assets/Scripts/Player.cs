@@ -55,7 +55,7 @@ public class Player : MonoBehaviour
 public void ToggleRun()
 {
     runPressed = !runPressed;
-    Debug.Log("Run = " + runPressed);
+    Debug.Log("ToggleRun = " + runPressed + " Frame: " + Time.frameCount);
 }
 
 public void SetCrouch(bool value)
