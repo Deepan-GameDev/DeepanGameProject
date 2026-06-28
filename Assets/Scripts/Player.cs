@@ -52,9 +52,10 @@ public class Player : MonoBehaviour
 
 }
 
-public void SetRun(bool value)
+public void ToggleRun()
 {
-    runPressed = value;
+    runPressed = !runPressed;
+    Debug.Log("Run = " + runPressed);
 }
 
 public void SetCrouch(bool value)
@@ -102,18 +103,25 @@ public void SetCrouch(bool value)
 {
 #if UNITY_EDITOR
 
-    moveInput = new Vector2(
-        Input.GetAxisRaw("Horizontal"),
-        Input.GetAxisRaw("Vertical"));
-
-    runPressed = Input.GetKey(runKey);
-    crouchPressed = Input.GetKey(crouchKey);
+    // Only keyboard movement
+    if (moveInput == Vector2.zero)
+    {
+        moveInput = new Vector2(
+            Input.GetAxisRaw("Horizontal"),
+            Input.GetAxisRaw("Vertical"));
+    }
 
 #endif
 
     isCrouching = crouchPressed || !CanStandUp();
 
     UpdateCrouch();
+
+  //  if (!IsMoving())
+ //   {
+  //      runPressed = false;
+  //  }
+
     UpdateFootsteps();
 }
 

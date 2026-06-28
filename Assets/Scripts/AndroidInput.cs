@@ -11,14 +11,9 @@ public class AndroidInput : MonoBehaviour
         player.SetMoveInput(joystick.InputDirection);
     }
 
-    public void RunDown()
+    public void RunButton()
     {
-        player.SetRun(true);
-    }
-
-    public void RunUp()
-    {
-        player.SetRun(false);
+        player.ToggleRun();
     }
 
     public void CrouchDown()
