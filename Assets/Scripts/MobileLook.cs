@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler
+public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler
 {
     public Player player;
     public Transform cameraTransform;
@@ -11,9 +11,15 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler
     public float maxPitch = 80f;
 
     private float pitch = 0f;
+    private int activePointerId = int.MinValue;
 
     void Start()
     {
+        if (cameraTransform == null)
+        {
+            return;
+        }
+
         pitch = cameraTransform.localEulerAngles.x;
 
         if (pitch > 180f)
@@ -22,10 +28,24 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        activePointerId = eventData.pointerId;
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        if (eventData.pointerId == activePointerId)
+        {
+            activePointerId = int.MinValue;
+        }
     }
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (eventData.pointerId != activePointerId || player == null || cameraTransform == null)
+        {
+            return;
+        }
+
         Vector2 delta = eventData.delta;
 
         // Horizontal look

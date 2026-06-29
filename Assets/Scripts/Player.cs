@@ -19,6 +19,8 @@ public class Player : MonoBehaviour
     public float standingCameraHeight = 1.6f;
     public float crouchingCameraHeight = 0.95f;
     public LayerMask groundLayers = ~0;
+    public float moveInputDeadZone = 0.08f;
+    public float collisionSkinWidth = 0.03f;
 
     [Header("Footsteps")]
     public AudioClip footstepClip;
@@ -46,7 +48,9 @@ public class Player : MonoBehaviour
 
   public void SetMoveInput(Vector2 input)
 {
-    moveInput = Vector2.ClampMagnitude(input, 1f);
+    moveInput = input.sqrMagnitude < moveInputDeadZone * moveInputDeadZone
+        ? Vector2.zero
+        : Vector2.ClampMagnitude(input, 1f);
 
 }
 
@@ -117,7 +121,24 @@ public void SetCrouch(bool value)
         float speed = GetCurrentSpeed();
         Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
         Vector3 worldMove = targetRotation * localMove * speed * Time.fixedDeltaTime;
-        rb.MovePosition(rb.position + worldMove);
+        MoveWithCollision(worldMove);
+    }
+
+    private void MoveWithCollision(Vector3 movement)
+    {
+        float distance = movement.magnitude;
+        if (distance <= 0.0001f)
+        {
+            return;
+        }
+
+        Vector3 direction = movement / distance;
+        if (rb.SweepTest(direction, out RaycastHit hit, distance + collisionSkinWidth, QueryTriggerInteraction.Ignore))
+        {
+            distance = Mathf.Max(0f, hit.distance - collisionSkinWidth);
+        }
+
+        rb.MovePosition(rb.position + direction * distance);
     }
 
     private float GetCurrentSpeed()
@@ -239,4 +260,3 @@ public void SetCrouch(bool value)
         return clip;
     }
 }
-

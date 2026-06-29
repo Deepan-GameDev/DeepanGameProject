@@ -5,6 +5,7 @@ public class PlayerFollowCamera : MonoBehaviour
     public float mouseSensitivity = 100f;
     public Transform playerBody;
     public bool invertY;
+    public bool enableMouseLook = false;
 
     private Player player;
     private float xRotation;
@@ -27,7 +28,7 @@ public class PlayerFollowCamera : MonoBehaviour
 
     void Update()
     {
-        if (playerBody == null)
+        if (!enableMouseLook || playerBody == null)
         {
             return;
         }
