@@ -6,7 +6,8 @@ namespace DoorScript
 	[RequireComponent(typeof(AudioSource))]
 
 
-public class Door : MonoBehaviour {
+public class Door : MonoBehaviour, IInteractable
+{
 	public bool open;
 	public float smooth = 1.0f;
 	float DoorOpenAngle = -90.0f;
@@ -34,10 +35,15 @@ public class Door : MonoBehaviour {
 		}  
 	}
 
-	public void OpenDoor(){
+	public void OpenDoor()
+	{
 		open =!open;
-		asource.clip = open?openDoor:closeDoor;
+		asource.clip = open ? openDoor : closeDoor;
 		asource.Play ();
 	}
+	public void Interact()
+		{
+			OpenDoor();
+		}
 }
 }
