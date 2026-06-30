@@ -2,18 +2,15 @@ using UnityEngine;
 
 public class TorchPickup : MonoBehaviour, IInteractable
 {
-    public GameObject playerTorchLight;
-    public AudioClip pickupSound;
+    public FlashlightController flashlightController;
+    public GameObject flashlightButton;
 
     public void Interact()
     {
-        // Turn on flashlight
-        playerTorchLight.SetActive(true);
+        flashlightController.EnableFlashlight();
 
-        // Play pickup sound
-        AudioSource.PlayClipAtPoint(pickupSound, transform.position);
+        flashlightButton.SetActive(true);
 
-        // Remove torch
         Destroy(gameObject);
     }
 }
