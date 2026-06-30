@@ -9,6 +9,8 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
     public float sensitivity = 0.2f;
     public float minPitch = -80f;
     public float maxPitch = 80f;
+    public float minLookDelta = 0.01f;
+    public float maxLookDelta = 80f;
 
     private float pitch = 0f;
     private int activePointerId = int.MinValue;
@@ -47,6 +49,12 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
         }
 
         Vector2 delta = eventData.delta;
+        if (delta.sqrMagnitude < minLookDelta * minLookDelta)
+        {
+            return;
+        }
+
+        delta = Vector2.ClampMagnitude(delta, maxLookDelta);
 
         // Horizontal look
         player.AddYawInput(delta.x * sensitivity);

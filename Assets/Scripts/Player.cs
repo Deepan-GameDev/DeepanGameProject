@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
     private AudioClip generatedFootstepClip;
     private float footstepTimer;
     private float pendingYaw;
+    private Quaternion playerRotation;
     private bool isCrouching;
     private bool runPressed;
     private bool crouchPressed;
@@ -83,6 +84,8 @@ public void SetCrouch(bool value)
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.angularVelocity = Vector3.zero;
+        playerRotation = rb.rotation;
 
         capsule.radius = bodyRadius;
         capsule.height = standingHeight;
@@ -114,17 +117,18 @@ public void SetCrouch(bool value)
 }    
   void FixedUpdate()
     {
-        Quaternion targetRotation = rb.rotation;
         if (Mathf.Abs(pendingYaw) > 0.001f)
         {
-            targetRotation *= Quaternion.Euler(0f, pendingYaw, 0f);
-            rb.MoveRotation(targetRotation);
+            playerRotation *= Quaternion.Euler(0f, pendingYaw, 0f);
             pendingYaw = 0f;
         }
 
+        rb.angularVelocity = Vector3.zero;
+        rb.MoveRotation(playerRotation);
+
         float speed = GetCurrentSpeed();
         Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
-        Vector3 worldMove = targetRotation * localMove * speed * Time.fixedDeltaTime;
+        Vector3 worldMove = playerRotation * localMove * speed * Time.fixedDeltaTime;
         MoveWithCollision(worldMove);
     }
 
