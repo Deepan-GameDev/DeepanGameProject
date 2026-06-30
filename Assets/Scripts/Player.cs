@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     [Header("Body")]
     public float standingHeight = 1.85f;
     public float crouchingHeight = 1.15f;
-    public float bodyRadius = 0.35f;
+    public float bodyRadius = 0.3f;
     public float crouchSmoothSpeed = 10f;
     public Transform cameraTransform;
     public float standingCameraHeight = 1.6f;
@@ -21,6 +21,8 @@ public class Player : MonoBehaviour
     public LayerMask groundLayers = ~0;
     public float moveInputDeadZone = 0.08f;
     public float collisionSkinWidth = 0.03f;
+    public float stepHeight = 0.45f;
+    public float groundSnapDistance = 0.25f;
 
     [Header("Footsteps")]
     public AudioClip footstepClip;
@@ -40,6 +42,8 @@ public class Player : MonoBehaviour
     private bool crouchPressed;
     private Vector2 moveInput;
     private readonly Collider[] standCheckHits = new Collider[8];
+    private readonly RaycastHit[] movementHits = new RaycastHit[8];
+    private readonly Collider[] overlapHits = new Collider[8];
 
     public void AddYawInput(float yawDegrees)
     {
@@ -126,19 +130,143 @@ public void SetCrouch(bool value)
 
     private void MoveWithCollision(Vector3 movement)
     {
-        float distance = movement.magnitude;
-        if (distance <= 0.0001f)
+        Vector3 remaining = movement;
+        Vector3 position = rb.position;
+
+        for (int i = 0; i < 3; i++)
         {
-            return;
+            float distance = remaining.magnitude;
+            if (distance <= 0.0001f)
+            {
+                break;
+            }
+
+            Vector3 direction = remaining / distance;
+            if (!CastPlayer(position, direction, distance + collisionSkinWidth, out RaycastHit hit))
+            {
+                position += remaining;
+                break;
+            }
+
+            if (TryStep(position, direction, distance, out Vector3 steppedPosition))
+            {
+                position = steppedPosition;
+                remaining = movement - (position - rb.position);
+                remaining.y = 0f;
+                continue;
+            }
+
+            float travelDistance = Mathf.Max(0f, hit.distance - collisionSkinWidth);
+            position += direction * travelDistance;
+
+            Vector3 blockedMovement = remaining - direction * travelDistance;
+            remaining = Vector3.ProjectOnPlane(blockedMovement, hit.normal);
+            remaining.y = 0f;
         }
 
-        Vector3 direction = movement / distance;
-        if (rb.SweepTest(direction, out RaycastHit hit, distance + collisionSkinWidth, QueryTriggerInteraction.Ignore))
+        rb.MovePosition(position);
+    }
+
+    private bool TryStep(Vector3 position, Vector3 direction, float distance, out Vector3 steppedPosition)
+    {
+        steppedPosition = position;
+
+        Vector3 raisedPosition = position + Vector3.up * stepHeight;
+        if (!IsCapsuleClear(raisedPosition))
         {
-            distance = Mathf.Max(0f, hit.distance - collisionSkinWidth);
+            return false;
         }
 
-        rb.MovePosition(rb.position + direction * distance);
+        if (CastPlayer(raisedPosition, direction, distance + collisionSkinWidth, out RaycastHit raisedHit))
+        {
+            distance = Mathf.Max(0f, raisedHit.distance - collisionSkinWidth);
+            if (distance <= 0.0001f)
+            {
+                return false;
+            }
+        }
+
+        Vector3 forwardPosition = raisedPosition + direction * distance;
+        if (!CastPlayer(forwardPosition, Vector3.down, stepHeight + groundSnapDistance, out RaycastHit groundHit))
+        {
+            return false;
+        }
+
+        float groundAngle = Vector3.Angle(groundHit.normal, Vector3.up);
+        if (groundAngle > 55f)
+        {
+            return false;
+        }
+
+        steppedPosition = forwardPosition + Vector3.down * Mathf.Max(0f, groundHit.distance - collisionSkinWidth);
+        return IsCapsuleClear(steppedPosition);
+    }
+
+    private bool CastPlayer(Vector3 position, Vector3 direction, float distance, out RaycastHit bestHit)
+    {
+        GetCapsulePoints(position, out Vector3 bottom, out Vector3 top, out float radius);
+        int hitCount = Physics.CapsuleCastNonAlloc(
+            bottom,
+            top,
+            radius,
+            direction,
+            movementHits,
+            distance,
+            groundLayers,
+            QueryTriggerInteraction.Ignore);
+
+        bestHit = default;
+        float closestDistance = float.PositiveInfinity;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = movementHits[i];
+            if (hit.collider == null || hit.collider == capsule)
+            {
+                continue;
+            }
+
+            if (hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                bestHit = hit;
+            }
+        }
+
+        return closestDistance < float.PositiveInfinity;
+    }
+
+    private bool IsCapsuleClear(Vector3 position)
+    {
+        GetCapsulePoints(position, out Vector3 bottom, out Vector3 top, out float radius);
+        int hitCount = Physics.OverlapCapsuleNonAlloc(
+            bottom,
+            top,
+            radius,
+            overlapHits,
+            groundLayers,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = overlapHits[i];
+            if (hit != null && hit != capsule)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void GetCapsulePoints(Vector3 position, out Vector3 bottom, out Vector3 top, out float radius)
+    {
+        radius = Mathf.Max(0.01f, capsule.radius - collisionSkinWidth);
+        float halfHeight = Mathf.Max(capsule.height * 0.5f, radius);
+        Vector3 center = position + transform.rotation * capsule.center;
+        float pointOffset = halfHeight - radius;
+        bottom = center + Vector3.down * pointOffset;
+        top = center + Vector3.up * pointOffset;
     }
 
     private float GetCurrentSpeed()
