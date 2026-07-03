@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class FlashlightController : MonoBehaviour
 {
@@ -9,13 +11,22 @@ public class FlashlightController : MonoBehaviour
     public float currentBattery = 100f;
     public float batteryDrainRate = 2f;
 
+    [Header("Battery UI")]
+    public Slider batterySlider;
+    public TMP_Text batteryText;
+
     private bool isOn = false;
     private bool hasFlashlight = false;
 
     void Start()
     {
         flashlight.SetActive(false);
+
         currentBattery = maxBattery;
+
+        batterySlider.maxValue = maxBattery;
+
+        UpdateBatteryUI();
     }
 
     void Update()
@@ -27,9 +38,13 @@ public class FlashlightController : MonoBehaviour
             if (currentBattery <= 0)
             {
                 currentBattery = 0;
+
                 isOn = false;
+
                 flashlight.SetActive(false);
             }
+
+            UpdateBatteryUI();
         }
     }
 
@@ -40,8 +55,11 @@ public class FlashlightController : MonoBehaviour
         if (currentBattery > 0)
         {
             isOn = true;
+
             flashlight.SetActive(true);
         }
+
+        UpdateBatteryUI();
     }
 
     public void ToggleFlashlight()
@@ -53,6 +71,20 @@ public class FlashlightController : MonoBehaviour
             return;
 
         isOn = !isOn;
+
         flashlight.SetActive(isOn);
+    }
+
+    void UpdateBatteryUI()
+    {
+        if (batterySlider != null)
+        {
+            batterySlider.value = currentBattery;
+        }
+
+        if (batteryText != null)
+        {
+            batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
+        }
     }
 }
