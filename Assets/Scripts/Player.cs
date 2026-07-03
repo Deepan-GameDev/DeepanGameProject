@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(CapsuleCollider))]
@@ -9,6 +10,13 @@ public class Player : MonoBehaviour
     public float walkSpeed = 4f;
     public float runSpeed = 7f;
     public float crouchSpeed = 2f;
+
+    [Header("Run Stamina")]
+    public float maxRunStamina = 5f;
+    public float runStaminaDrainRate = 1f;
+    public float runStaminaRechargeRate = 1f;
+    public float rechargeDelay = 1.5f;
+    public Image runCooldownFill;
 
     [Header("Body")]
     public float standingHeight = 1.85f;
@@ -45,6 +53,9 @@ public class Player : MonoBehaviour
     private bool runPressed;
     private bool crouchPressed;
     private Vector2 moveInput;
+    private float currentRunStamina;
+    private float rechargeTimer;
+    private bool runExhausted;
     private readonly Collider[] standCheckHits = new Collider[8];
     private readonly RaycastHit[] movementHits = new RaycastHit[8];
     private readonly Collider[] overlapHits = new Collider[8];
@@ -64,6 +75,12 @@ public class Player : MonoBehaviour
 
 public void ToggleRun()
 {
+    if (runExhausted)
+        return;
+
+    if (currentRunStamina <= 0f)
+        return;
+
     runPressed = !runPressed;
 }
 
@@ -108,6 +125,9 @@ public void SetCrouch(bool value)
         {
             generatedFootstepClip = CreateFootstepClip();
         }
+        currentRunStamina = maxRunStamina;
+
+        UpdateRunCooldownUI();
     }
 
   void Update()
@@ -116,8 +136,10 @@ public void SetCrouch(bool value)
 
     UpdateCrouch();
 
+    UpdateRunStamina();
+
     UpdateFootsteps();
-}    
+}
   void FixedUpdate()
     {
         if (Mathf.Abs(pendingYaw) > 0.001f)
@@ -292,9 +314,13 @@ public void SetCrouch(bool value)
     }
 
     private bool IsRunning()
-    {
-        return runPressed && IsMoving() && !isCrouching;
-    }
+{
+    return runPressed
+        && IsMoving()
+        && !isCrouching
+        && !runExhausted
+        && currentRunStamina > 0f;
+}
 
     private bool IsGrounded()
     {
@@ -388,6 +414,52 @@ public void SetCrouch(bool value)
     if (torchSway != null)
     {
         torchSway.OnFootstep(IsRunning());
+    }
+}
+    private void UpdateRunStamina()
+{
+    if (IsRunning())
+    {
+        currentRunStamina -= runStaminaDrainRate * Time.deltaTime;
+
+        rechargeTimer = rechargeDelay;
+
+        if (currentRunStamina <= 0f)
+        {
+            currentRunStamina = 0f;
+
+            runPressed = false;
+
+            runExhausted = true;
+        }
+    }
+    else
+    {
+        if (rechargeTimer > 0f)
+        {
+            rechargeTimer -= Time.deltaTime;
+        }
+        else
+        {
+            currentRunStamina += runStaminaRechargeRate * Time.deltaTime;
+
+            if (currentRunStamina >= maxRunStamina)
+            {
+                currentRunStamina = maxRunStamina;
+
+                runExhausted = false;
+            }
+        }
+    }
+
+    UpdateRunCooldownUI();
+}
+    private void UpdateRunCooldownUI()
+{
+    if (runCooldownFill != null)
+    {
+        runCooldownFill.fillAmount =
+            currentRunStamina / maxRunStamina;
     }
 }
 
