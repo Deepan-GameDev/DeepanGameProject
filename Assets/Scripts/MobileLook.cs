@@ -5,6 +5,7 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 {
     public Player player;
     public Transform cameraTransform;
+    public TorchSway torchSway;
 
     public float sensitivity = 0.2f;
     public float minPitch = -80f;
@@ -55,6 +56,11 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
         }
 
         delta = Vector2.ClampMagnitude(delta, maxLookDelta);
+        
+        if (torchSway != null)
+       {
+        torchSway.SetSwayInput(delta);
+    }
 
         // Horizontal look
         player.AddYawInput(delta.x * sensitivity);
