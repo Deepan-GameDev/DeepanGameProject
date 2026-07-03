@@ -87,4 +87,15 @@ public class FlashlightController : MonoBehaviour
             batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
         }
     }
+    public void AddBattery(float amount)
+{
+    currentBattery += amount;
+
+    if (currentBattery > maxBattery)
+    {
+        currentBattery = maxBattery;
+    }
+
+    UpdateBatteryUI();
+}
 }
