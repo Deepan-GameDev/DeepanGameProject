@@ -118485,9 +118485,9 @@ RectTransform:
   - {fileID: 254297427}
   m_Father: {fileID: 998712752}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 695.235, y: 99.66499}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: -506.5, y: 129.5}
   m_SizeDelta: {x: 1429.53, y: 152.73001}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!43 &816732086
@@ -255598,7 +255598,7 @@ Light:
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0.7357423, g: 0.8059287, b: 0.93962264, a: 1}
-  m_Intensity: 0
+  m_Intensity: 0.5
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
