@@ -22,6 +22,10 @@ public class FlashlightController : MonoBehaviour
     public float maxFlickerDelay = 0.2f;
     public float flickerInterval = 2f;
 
+    [Header("Flicker Audio")]
+    public AudioSource flickerAudioSource;
+    public AudioClip flickerSound;
+
     private bool isOn = false;
     private bool hasFlashlight = false;
     private bool isFlickering = false;
@@ -111,22 +115,27 @@ public class FlashlightController : MonoBehaviour
     }
 
     IEnumerator FlickerFlashlight()
+{
+    isFlickering = true;
+
+    flashlight.SetActive(false);
+
+    if (flickerAudioSource != null && flickerSound != null)
     {
-        isFlickering = true;
-
-        flashlight.SetActive(false);
-
-        yield return new WaitForSeconds(
-            Random.Range(minFlickerDelay, maxFlickerDelay)
-        );
-
-        if (isOn && currentBattery > 0)
-        {
-            flashlight.SetActive(true);
-        }
-
-        yield return new WaitForSeconds(flickerInterval);
-
-        isFlickering = false;
+        flickerAudioSource.PlayOneShot(flickerSound);
     }
+
+    yield return new WaitForSeconds(
+        Random.Range(minFlickerDelay, maxFlickerDelay)
+    );
+
+    if (isOn && currentBattery > 0)
+    {
+        flashlight.SetActive(true);
+    }
+
+    yield return new WaitForSeconds(flickerInterval);
+
+    isFlickering = false;
+}
 }
