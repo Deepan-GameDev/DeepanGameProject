@@ -15,12 +15,20 @@ public class FlashlightController : MonoBehaviour
     [Header("Battery UI")]
     public Slider batterySlider;
     public TMP_Text batteryText;
+    
+    [Header("Low Battery UI")]
+    public GameObject lowBatteryText;
+    public float warningBlinkSpeed = 0.5f;
+
+private Coroutine warningCoroutine;
 
     [Header("Low Battery Flicker")]
     public float lowBatteryLevel = 20f;
     public float minFlickerDelay = 0.05f;
     public float maxFlickerDelay = 0.2f;
     public float flickerInterval = 2f;
+    public int minFlickerCount = 2;
+    public int maxFlickerCount = 5;
 
     [Header("Flicker Audio")]
     public AudioSource flickerAudioSource;
@@ -102,32 +110,60 @@ public class FlashlightController : MonoBehaviour
     }
 
     void UpdateBatteryUI()
+{
+    if (batterySlider != null)
     {
-        if (batterySlider != null)
-        {
-            batterySlider.value = currentBattery;
-        }
-
-        if (batteryText != null)
-        {
-            batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
-        }
+        batterySlider.value = currentBattery;
     }
+
+    if (batteryText != null)
+    {
+        batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
+    }
+
+    UpdateLowBatteryWarning();
+}
 
     IEnumerator FlickerFlashlight()
 {
     isFlickering = true;
 
-    flashlight.SetActive(false);
+    int flickerCount = Random.Range(
+        minFlickerCount,
+        maxFlickerCount + 1
+    );
 
     if (flickerAudioSource != null && flickerSound != null)
     {
         flickerAudioSource.PlayOneShot(flickerSound);
     }
 
-    yield return new WaitForSeconds(
-        Random.Range(minFlickerDelay, maxFlickerDelay)
-    );
+    for (int i = 0; i < flickerCount; i++)
+    {
+        if (!isOn || currentBattery <= 0)
+        {
+            flashlight.SetActive(false);
+            break;
+        }
+
+        flashlight.SetActive(false);
+
+        yield return new WaitForSeconds(
+            Random.Range(minFlickerDelay, maxFlickerDelay)
+        );
+
+        if (!isOn || currentBattery <= 0)
+        {
+            flashlight.SetActive(false);
+            break;
+        }
+
+        flashlight.SetActive(true);
+
+        yield return new WaitForSeconds(
+            Random.Range(minFlickerDelay, maxFlickerDelay)
+        );
+    }
 
     if (isOn && currentBattery > 0)
     {
@@ -137,5 +173,42 @@ public class FlashlightController : MonoBehaviour
     yield return new WaitForSeconds(flickerInterval);
 
     isFlickering = false;
+}
+
+IEnumerator BlinkLowBatteryWarning()
+{
+    while (true)
+    {
+        lowBatteryText.SetActive(true);
+
+        yield return new WaitForSeconds(warningBlinkSpeed);
+
+        lowBatteryText.SetActive(false);
+
+        yield return new WaitForSeconds(warningBlinkSpeed);
+    }
+}
+void UpdateLowBatteryWarning()
+{
+    if (lowBatteryText == null)
+        return;
+
+    if (hasFlashlight && currentBattery <= lowBatteryLevel && currentBattery > 0)
+    {
+        if (warningCoroutine == null)
+        {
+            warningCoroutine = StartCoroutine(BlinkLowBatteryWarning());
+        }
+    }
+    else
+    {
+        if (warningCoroutine != null)
+        {
+            StopCoroutine(warningCoroutine);
+            warningCoroutine = null;
+        }
+
+        lowBatteryText.SetActive(false);
+    }
 }
 }
