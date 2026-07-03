@@ -33,7 +33,7 @@ public class Player : MonoBehaviour
     public float groundSnapDistance = 0.25f;
 
     [Header("Footsteps")]
-    public AudioClip footstepClip;
+    public AudioClip[] footstepClips;
     public float walkingStepInterval = 0.52f;
     public float runningStepInterval = 0.32f;
     public float footstepVolume = 0.55f;
@@ -96,10 +96,10 @@ public void SetCrouch(bool value)
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
         footstepSource = GetComponent<AudioSource>();
-        if (footstepSource == null)
-        {
-            footstepSource = gameObject.AddComponent<AudioSource>();
-        }
+        if (footstepClips == null || footstepClips.Length == 0)
+{
+    generatedFootstepClip = CreateFootstepClip();
+}
 
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -121,7 +121,7 @@ public void SetCrouch(bool value)
             cameraTransform = Camera.main.transform;
         }
 
-        if (footstepClip == null)
+        if (footstepClips == null)
         {
             generatedFootstepClip = CreateFootstepClip();
         }
@@ -388,9 +388,18 @@ public void SetCrouch(bool value)
 
     private void PlayFootstep()
 {
-    AudioClip clip = footstepClip != null
-        ? footstepClip
-        : generatedFootstepClip;
+    AudioClip clip = null;
+
+    if (footstepClips != null && footstepClips.Length > 0)
+    {
+        clip = footstepClips[
+            Random.Range(0, footstepClips.Length)
+        ];
+    }
+    else
+    {
+        clip = generatedFootstepClip;
+    }
 
     if (clip == null)
     {

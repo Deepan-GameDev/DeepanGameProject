@@ -270618,7 +270618,11 @@ MonoBehaviour:
   collisionSkinWidth: 0.03
   stepHeight: 0.45
   groundSnapDistance: 0.25
-  footstepClip: {fileID: 8300000, guid: c0447351e996b9549b1eeb128e2bcfbd, type: 3}
+  footstepClips:
+  - {fileID: 8300000, guid: 015f3624a46d54646a3867281bf42125, type: 3}
+  - {fileID: 8300000, guid: 16ee55c1b39724c4f8441b433d791f4e, type: 3}
+  - {fileID: 8300000, guid: a4f702e5537cf5440b0c2156b2fa2a1f, type: 3}
+  - {fileID: 8300000, guid: a95a76d11f6fa4f408296e85b6ba1fff, type: 3}
   walkingStepInterval: 0.5
   runningStepInterval: 0.3
   footstepVolume: 0.55
@@ -270747,7 +270751,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
