@@ -171556,6 +171556,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1355403691}
+  - {fileID: 2009054888}
   m_Father: {fileID: 1958503470}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1202231365
@@ -219787,6 +219788,96 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1001 &1584432697
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2009054888}
+    m_Modifications:
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Size.x
+      value: 0.28918266
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Size.y
+      value: 0.16955805
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Size.z
+      value: 0.3388439
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Center.x
+      value: 0.0007234373
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Center.y
+      value: 0.08136892
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Center.z
+      value: 0.023456527
+      objectReference: {fileID: 0}
+    - target: {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_Name
+      value: Player Torch Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: -2494441373853552585, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
 --- !u!1001 &1586146571
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -230592,6 +230683,16 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1681928983 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+  m_PrefabInstance: {fileID: 1584432697}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1681928984 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+  m_PrefabInstance: {fileID: 1584432697}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1687760214
 Mesh:
   m_ObjectHideFlags: 0
@@ -277108,6 +277209,38 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 1803188285}
+--- !u!1 &2009054887
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2009054888}
+  m_Layer: 0
+  m_Name: Torch Holder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &2009054888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009054887}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: -0.16, z: 0.23}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1681928984}
+  m_Father: {fileID: 1202231364}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2010409620
 GameObject:
   m_ObjectHideFlags: 0
@@ -315380,6 +315513,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TorchPickup
   flashlightController: {fileID: 1958503473}
   flashlightButton: {fileID: 1460194050}
+  playerTorchModel: {fileID: 1681928983}
   pickupSound: {fileID: 8300000, guid: 3e2326abe0779f24c911734dd5f3c27a, type: 3}
 --- !u!1001 &6991347083074771473
 PrefabInstance:
