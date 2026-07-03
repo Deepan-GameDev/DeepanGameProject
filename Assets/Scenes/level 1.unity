@@ -270446,6 +270446,10 @@ MonoBehaviour:
   batteryDrainRate: 2
   batterySlider: {fileID: 1000612842}
   batteryText: {fileID: 1769497546}
+  lowBatteryLevel: 20
+  minFlickerDelay: 0.05
+  maxFlickerDelay: 0.2
+  flickerInterval: 0.5
 --- !u!1001 &1959578781
 PrefabInstance:
   m_ObjectHideFlags: 0

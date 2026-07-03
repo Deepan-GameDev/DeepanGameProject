@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class FlashlightController : MonoBehaviour
 {
@@ -15,8 +16,15 @@ public class FlashlightController : MonoBehaviour
     public Slider batterySlider;
     public TMP_Text batteryText;
 
+    [Header("Low Battery Flicker")]
+    public float lowBatteryLevel = 20f;
+    public float minFlickerDelay = 0.05f;
+    public float maxFlickerDelay = 0.2f;
+    public float flickerInterval = 2f;
+
     private bool isOn = false;
     private bool hasFlashlight = false;
+    private bool isFlickering = false;
 
     void Start()
     {
@@ -38,10 +46,13 @@ public class FlashlightController : MonoBehaviour
             if (currentBattery <= 0)
             {
                 currentBattery = 0;
-
                 isOn = false;
-
                 flashlight.SetActive(false);
+            }
+
+            if (currentBattery <= lowBatteryLevel && !isFlickering)
+            {
+                StartCoroutine(FlickerFlashlight());
             }
 
             UpdateBatteryUI();
@@ -55,7 +66,6 @@ public class FlashlightController : MonoBehaviour
         if (currentBattery > 0)
         {
             isOn = true;
-
             flashlight.SetActive(true);
         }
 
@@ -75,6 +85,18 @@ public class FlashlightController : MonoBehaviour
         flashlight.SetActive(isOn);
     }
 
+    public void AddBattery(float amount)
+    {
+        currentBattery += amount;
+
+        if (currentBattery > maxBattery)
+        {
+            currentBattery = maxBattery;
+        }
+
+        UpdateBatteryUI();
+    }
+
     void UpdateBatteryUI()
     {
         if (batterySlider != null)
@@ -87,15 +109,24 @@ public class FlashlightController : MonoBehaviour
             batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
         }
     }
-    public void AddBattery(float amount)
-{
-    currentBattery += amount;
 
-    if (currentBattery > maxBattery)
+    IEnumerator FlickerFlashlight()
     {
-        currentBattery = maxBattery;
-    }
+        isFlickering = true;
 
-    UpdateBatteryUI();
-}
+        flashlight.SetActive(false);
+
+        yield return new WaitForSeconds(
+            Random.Range(minFlickerDelay, maxFlickerDelay)
+        );
+
+        if (isOn && currentBattery > 0)
+        {
+            flashlight.SetActive(true);
+        }
+
+        yield return new WaitForSeconds(flickerInterval);
+
+        isFlickering = false;
+    }
 }
