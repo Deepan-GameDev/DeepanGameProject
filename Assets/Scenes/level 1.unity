@@ -30784,16 +30784,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 254297424}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 998712752}
+  m_Father: {fileID: 810844606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 80.47, y: 151.03}
+  m_AnchoredPosition: {x: -614.76514, y: 51.36502}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!43 &254942170
@@ -118376,6 +118376,44 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &810844605
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 810844606}
+  m_Layer: 5
+  m_Name: Battery UI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &810844606
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 810844605}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1000612841}
+  - {fileID: 1769497545}
+  - {fileID: 254297427}
+  m_Father: {fileID: 998712752}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 695.235, y: 99.66499}
+  m_SizeDelta: {x: 1429.53, y: 152.73001}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!43 &816732086
 Mesh:
   m_ObjectHideFlags: 0
@@ -143617,9 +143655,7 @@ RectTransform:
   - {fileID: 869747740}
   - {fileID: 72208358}
   - {fileID: 1460194051}
-  - {fileID: 1000612841}
-  - {fileID: 1769497545}
-  - {fileID: 254297427}
+  - {fileID: 810844606}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -143651,7 +143687,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1000612840}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -143659,11 +143695,11 @@ RectTransform:
   - {fileID: 2052816408}
   - {fileID: 2065401782}
   - {fileID: 72920281}
-  m_Father: {fileID: 998712752}
+  m_Father: {fileID: 810844606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -135, y: -551.9}
+  m_AnchoredPosition: {x: -156, y: -85.92999}
   m_SizeDelta: {x: 208.3, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1000612842
@@ -219830,7 +219866,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7340030766136916201, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
       propertyPath: m_LocalPosition.x
@@ -243146,16 +243182,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1769497544}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 998712752}
+  m_Father: {fileID: 810844606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -79, y: -593.7}
+  m_AnchoredPosition: {x: -100, y: -127.72998}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1769497546
@@ -270506,6 +270542,7 @@ MonoBehaviour:
   runningStepInterval: 0.3
   footstepVolume: 0.55
   footstepPitchRange: {x: 0.92, y: 1.08}
+  torchSway: {fileID: 2009054889}
 --- !u!136 &1958503467
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -270684,9 +270721,10 @@ MonoBehaviour:
   flashlight: {fileID: 1355403690}
   maxBattery: 100
   currentBattery: 100
-  batteryDrainRate: 5
+  batteryDrainRate: 3
   batterySlider: {fileID: 1000612842}
   batteryText: {fileID: 1769497546}
+  batteryUI: {fileID: 810844605}
   lowBatteryText: {fileID: 254297424}
   warningBlinkSpeed: 0.5
   lowBatteryLevel: 30
@@ -277255,10 +277293,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 374d7453f71cf7c47b0910ec64b4b160, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TorchSway
+  player: {fileID: 1958503466}
   swayAmount: 0.03
   maxSwayAmount: 0.01
   smoothSpeed: 5
   returnSpeed: 6
+  walkBobSpeed: 8
+  walkBobAmountX: 0.015
+  walkBobAmountY: 0.025
+  runBobSpeed: 12
+  runBobAmountX: 0.025
+  runBobAmountY: 0.045
+  crouchBobSpeed: 5
+  crouchBobAmountX: 0.008
+  crouchBobAmountY: 0.012
+  walkStepKick: 0.015
+  runStepKick: 0.03
+  stepReturnSpeed: 8
 --- !u!1 &2010409620
 GameObject:
   m_ObjectHideFlags: 0

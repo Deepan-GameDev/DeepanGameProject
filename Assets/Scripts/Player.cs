@@ -31,6 +31,9 @@ public class Player : MonoBehaviour
     public float footstepVolume = 0.55f;
     public Vector2 footstepPitchRange = new Vector2(0.92f, 1.08f);
 
+    [Header("Torch")]
+    public TorchSway torchSway;
+
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private AudioSource footstepSource;
@@ -358,17 +361,35 @@ public void SetCrouch(bool value)
     }
 
     private void PlayFootstep()
-    {
-        AudioClip clip = footstepClip != null ? footstepClip : generatedFootstepClip;
-        if (clip == null)
-        {
-            return;
-        }
+{
+    AudioClip clip = footstepClip != null
+        ? footstepClip
+        : generatedFootstepClip;
 
-        float pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
-        footstepSource.pitch = IsRunning() ? pitch * 1.05f : pitch;
-        footstepSource.PlayOneShot(clip, footstepVolume);
+    if (clip == null)
+    {
+        return;
     }
+
+    float pitch = Random.Range(
+        footstepPitchRange.x,
+        footstepPitchRange.y
+    );
+
+    footstepSource.pitch = IsRunning()
+        ? pitch * 1.05f
+        : pitch;
+
+    footstepSource.PlayOneShot(
+        clip,
+        footstepVolume
+    );
+
+    if (torchSway != null)
+    {
+        torchSway.OnFootstep(IsRunning());
+    }
+}
 
     private AudioClip CreateFootstepClip()
     {
@@ -391,4 +412,18 @@ public void SetCrouch(bool value)
         clip.SetData(samples, 0);
         return clip;
     }
+    public bool GetIsMoving()
+{
+    return IsMoving();
+}
+
+public bool GetIsRunning()
+{
+    return IsRunning();
+}
+
+public bool GetIsCrouching()
+{
+    return isCrouching;
+}
 }

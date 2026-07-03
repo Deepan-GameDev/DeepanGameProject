@@ -15,6 +15,7 @@ public class FlashlightController : MonoBehaviour
     [Header("Battery UI")]
     public Slider batterySlider;
     public TMP_Text batteryText;
+    public GameObject batteryUI;
     
     [Header("Low Battery UI")]
     public GameObject lowBatteryText;
@@ -45,6 +46,10 @@ private Coroutine warningCoroutine;
         currentBattery = maxBattery;
 
         batterySlider.maxValue = maxBattery;
+        if (batteryUI != null)
+{
+    batteryUI.SetActive(false);
+}
 
         UpdateBatteryUI();
     }
@@ -72,17 +77,22 @@ private Coroutine warningCoroutine;
     }
 
     public void EnableFlashlight()
+{
+    hasFlashlight = true;
+
+    if (batteryUI != null)
     {
-        hasFlashlight = true;
-
-        if (currentBattery > 0)
-        {
-            isOn = true;
-            flashlight.SetActive(true);
-        }
-
-        UpdateBatteryUI();
+        batteryUI.SetActive(true);
     }
+
+    if (currentBattery > 0)
+    {
+        isOn = true;
+        flashlight.SetActive(true);
+    }
+
+    UpdateBatteryUI();
+}
 
     public void ToggleFlashlight()
     {
