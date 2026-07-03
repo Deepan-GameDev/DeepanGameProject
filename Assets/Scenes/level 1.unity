@@ -255598,7 +255598,7 @@ Light:
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0.7357423, g: 0.8059287, b: 0.93962264, a: 1}
-  m_Intensity: 0.5
+  m_Intensity: 3.98
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -270816,6 +270816,9 @@ MonoBehaviour:
   maxFlickerCount: 5
   flickerAudioSource: {fileID: 1958503474}
   flickerSound: {fileID: 8300000, guid: ea92a3e4cfa11ab4a91adec461a73e9a, type: 3}
+  toggleAudioSource: {fileID: 1958503474}
+  flashlightOnSound: {fileID: 8300000, guid: 3e2326abe0779f24c911734dd5f3c27a, type: 3}
+  flashlightOffSound: {fileID: 8300000, guid: 3e2326abe0779f24c911734dd5f3c27a, type: 3}
 --- !u!82 &1958503474
 AudioSource:
   m_ObjectHideFlags: 0
@@ -313685,6 +313688,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 1311353706}
+    - target: {fileID: 2537927827540222932, guid: 945171c61327215468a6514e865083c0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 12.4
+      objectReference: {fileID: 0}
     - target: {fileID: 2547424293556521556, guid: 945171c61327215468a6514e865083c0, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -314761,6 +314768,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: b134a723a10052a42b2ed60de8f528d9, type: 2}
+    - target: {fileID: 6231994387643287382, guid: 945171c61327215468a6514e865083c0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6231994387643287382, guid: 945171c61327215468a6514e865083c0, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

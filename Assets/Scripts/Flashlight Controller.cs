@@ -35,6 +35,11 @@ private Coroutine warningCoroutine;
     public AudioSource flickerAudioSource;
     public AudioClip flickerSound;
 
+    [Header("Flashlight Toggle Audio")]
+    public AudioSource toggleAudioSource;
+    public AudioClip flashlightOnSound;
+    public AudioClip flashlightOffSound;
+
     private bool isOn = false;
     private bool hasFlashlight = false;
     private bool isFlickering = false;
@@ -95,17 +100,29 @@ private Coroutine warningCoroutine;
 }
 
     public void ToggleFlashlight()
+{
+    if (!hasFlashlight)
+        return;
+
+    if (currentBattery <= 0)
+        return;
+
+    isOn = !isOn;
+
+    flashlight.SetActive(isOn);
+
+    if (toggleAudioSource != null)
     {
-        if (!hasFlashlight)
-            return;
-
-        if (currentBattery <= 0)
-            return;
-
-        isOn = !isOn;
-
-        flashlight.SetActive(isOn);
+        if (isOn && flashlightOnSound != null)
+        {
+            toggleAudioSource.PlayOneShot(flashlightOnSound);
+        }
+        else if (!isOn && flashlightOffSound != null)
+        {
+            toggleAudioSource.PlayOneShot(flashlightOffSound);
+        }
     }
+}
 
     public void AddBattery(float amount)
     {
