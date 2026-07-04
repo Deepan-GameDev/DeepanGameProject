@@ -6,6 +6,7 @@ public class LockedDoor : MonoBehaviour, IInteractable
     [Header("References")]
     public PlayerInventory playerInventory;
     public GameMessageUI gameMessageUI;
+    public ObjectiveManager objectiveManager;
 
     [Header("Door Settings")]
     public float openAngle = -90f;
@@ -60,6 +61,14 @@ public class LockedDoor : MonoBehaviour, IInteractable
     {
         gameMessageUI.ShowMessage("KEY REQUIRED");
     }
+    isLocked = false;
+
+playerInventory.UseKey();
+
+if (objectiveManager != null)
+{
+    objectiveManager.CompleteDoorObjective();
+}
 
     return;
 }

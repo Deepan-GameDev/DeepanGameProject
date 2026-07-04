@@ -6,6 +6,7 @@ public class TorchPickup : MonoBehaviour, IInteractable
     public GameObject flashlightButton;
     public GameObject playerTorchModel;
     public AudioClip pickupSound;
+    public ObjectiveManager objectiveManager;
 
     public void Interact()
     {
@@ -25,6 +26,11 @@ public class TorchPickup : MonoBehaviour, IInteractable
         {
             playerTorchModel.SetActive(true);
         }
+
+        if (objectiveManager != null)
+{
+    objectiveManager.CompleteTorchObjective();
+}
 
         Destroy(gameObject);
     }
