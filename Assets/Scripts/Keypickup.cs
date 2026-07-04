@@ -3,6 +3,7 @@ using UnityEngine;
 public class KeyPickup : MonoBehaviour, IInteractable
 {
     public PlayerInventory playerInventory;
+    public GameMessageUI gameMessageUI;
     public AudioClip pickupSound;
 
     public void Interact()
@@ -18,6 +19,11 @@ public class KeyPickup : MonoBehaviour, IInteractable
                 pickupSound,
                 transform.position
             );
+        }
+
+        if (gameMessageUI != null)
+        {
+            gameMessageUI.ShowMessage("KEY FOUND");
         }
 
         Destroy(gameObject);
