@@ -120994,8 +120994,8 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 847182583}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 0e6358316c33d324a8e644d3a01f08d5, type: 2}
+  m_Avatar: {fileID: 9000000, guid: 981ec6c8ef4e9c64895735a9368e0936, type: 3}
+  m_Controller: {fileID: 9100000, guid: dc39a48a1902a46419715b5c639636ca, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -121066,6 +121066,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ZombieAI
   player: {fileID: 1958503470}
   gameOverManager: {fileID: 611876029}
+  zombieAnimator: {fileID: 847182584}
+  wakeUpTrigger: WakeUp
+  wakeUpDuration: 4
+  wakeUpOnStart: 1
   detectionRange: 12
   chaseSpeed: 3.5
   killDistance: 1.5
@@ -311630,10 +311634,10 @@ PrefabInstance:
       addedObject: {fileID: 847182587}
     - targetCorrespondingSourceObject: {fileID: 8371370907340875395, guid: 4c7775f0e1833854797c35e7b95ece63, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 847182586}
+      addedObject: {fileID: 847182588}
     - targetCorrespondingSourceObject: {fileID: 8371370907340875395, guid: 4c7775f0e1833854797c35e7b95ece63, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 847182588}
+      addedObject: {fileID: 847182586}
   m_SourcePrefab: {fileID: 100100000, guid: 4c7775f0e1833854797c35e7b95ece63, type: 3}
 --- !u!1001 &2745939667730069751
 PrefabInstance:
