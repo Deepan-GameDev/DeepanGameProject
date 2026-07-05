@@ -41,7 +41,6 @@ public class LockedDoor : MonoBehaviour, IInteractable
         if (isLocked)
         {
             TryUnlockDoor();
-
             return;
         }
 
@@ -50,28 +49,39 @@ public class LockedDoor : MonoBehaviour, IInteractable
 
     private void TryUnlockDoor()
     {
+        if (playerInventory == null)
+            return;
+
         if (!playerInventory.HasKey())
-{
-    if (audioSource != null && lockedSound != null)
-    {
-        audioSource.PlayOneShot(lockedSound);
-    }
+        {
+            if (audioSource != null && lockedSound != null)
+            {
+                audioSource.PlayOneShot(lockedSound);
+            }
 
-    if (gameMessageUI != null)
-    {
-        gameMessageUI.ShowMessage("KEY REQUIRED");
-    }
-    isLocked = false;
+            if (gameMessageUI != null)
+            {
+                gameMessageUI.ShowMessage("KEY REQUIRED");
+            }
 
-    playerInventory.UseKey();
+            return;
+        }
 
-    if (objectiveManager != null)
-    {
-        objectiveManager.CompleteDoorObjective();
-    }
+        isLocked = false;
 
-    return;
-}
+        playerInventory.UseKey();
+
+        if (audioSource != null && unlockSound != null)
+        {
+            audioSource.PlayOneShot(unlockSound);
+        }
+
+        if (objectiveManager != null)
+        {
+            objectiveManager.CompleteDoorObjective();
+        }
+
+        StartCoroutine(OpenAfterUnlock());
     }
 
     IEnumerator OpenAfterUnlock()
