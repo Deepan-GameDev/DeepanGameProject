@@ -222168,7 +222168,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LockedDoor
   playerInventory: {fileID: 1958503475}
   gameMessageUI: {fileID: 1723344592}
-  objectiveManager: {fileID: 0}
+  objectiveManager: {fileID: 259759414}
   openAngle: -90
   openSpeed: 2
   audioSource: {fileID: 515453883}
@@ -252650,7 +252650,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LockedDoor
   playerInventory: {fileID: 1958503475}
   gameMessageUI: {fileID: 1723344592}
-  objectiveManager: {fileID: 0}
+  objectiveManager: {fileID: 259759414}
   openAngle: -90
   openSpeed: 2
   audioSource: {fileID: 967947330}
@@ -284998,7 +284998,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LockedDoor
   playerInventory: {fileID: 1958503475}
   gameMessageUI: {fileID: 1723344592}
-  objectiveManager: {fileID: 0}
+  objectiveManager: {fileID: 259759414}
   openAngle: -90
   openSpeed: 2
   audioSource: {fileID: 2065346546}
@@ -316330,7 +316330,7 @@ MonoBehaviour:
   flashlightButton: {fileID: 1460194050}
   playerTorchModel: {fileID: 1681928983}
   pickupSound: {fileID: 8300000, guid: 3e2326abe0779f24c911734dd5f3c27a, type: 3}
-  objectiveManager: {fileID: 0}
+  objectiveManager: {fileID: 259759414}
 --- !u!1 &6498633936367858255 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4858810204581209269, guid: 0e133ff41e45eb349b9fe1b84ee496a3, type: 3}
@@ -317125,6 +317125,7 @@ MonoBehaviour:
   playerInventory: {fileID: 1958503475}
   gameMessageUI: {fileID: 1723344592}
   pickupSound: {fileID: 8300000, guid: 6561de576a635e64e87cd06a78600a1e, type: 3}
+  objectiveManager: {fileID: 259759414}
 --- !u!65 &7407227435948599122
 BoxCollider:
   m_ObjectHideFlags: 0

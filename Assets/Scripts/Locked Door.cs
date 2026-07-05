@@ -63,12 +63,12 @@ public class LockedDoor : MonoBehaviour, IInteractable
     }
     isLocked = false;
 
-playerInventory.UseKey();
+    playerInventory.UseKey();
 
-if (objectiveManager != null)
-{
-    objectiveManager.CompleteDoorObjective();
-}
+    if (objectiveManager != null)
+    {
+        objectiveManager.CompleteDoorObjective();
+    }
 
     return;
 }

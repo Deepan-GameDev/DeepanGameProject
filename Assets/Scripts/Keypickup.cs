@@ -5,6 +5,7 @@ public class KeyPickup : MonoBehaviour, IInteractable
     public PlayerInventory playerInventory;
     public GameMessageUI gameMessageUI;
     public AudioClip pickupSound;
+    public ObjectiveManager objectiveManager;
 
     public void Interact()
     {
@@ -26,6 +27,12 @@ public class KeyPickup : MonoBehaviour, IInteractable
             gameMessageUI.ShowMessage("KEY FOUND");
         }
 
+        if (objectiveManager != null)
+{
+    objectiveManager.CompleteKeyObjective();
+}
+
         Destroy(gameObject);
     }
+    
 }

@@ -28,9 +28,9 @@ public class TorchPickup : MonoBehaviour, IInteractable
         }
 
         if (objectiveManager != null)
-{
-    objectiveManager.CompleteTorchObjective();
-}
+        {
+            objectiveManager.CompleteTorchObjective();
+        }
 
         Destroy(gameObject);
     }
