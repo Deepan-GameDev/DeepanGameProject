@@ -24,9 +24,9 @@ public class ZombieAI : MonoBehaviour
 
     [Header("Patrol")]
     public Transform[] patrolPoints;
-    public float patrolSpeed = 1.8f;
+    public float patrolSpeed = 1.3f;
     public float patrolWaitTime = 1.5f;
-    public float patrolPointDistance = 0.5f;
+    public float patrolPointDistance = 0.35f;
 
     [Header("Player Detection")]
     public float detectionRange = 12f;
@@ -43,6 +43,11 @@ public class ZombieAI : MonoBehaviour
     public float chaseSpeed = 3.5f;
     public float killDistance = 1.5f;
 
+    [Header("Animation")]
+    public float walkAnimationSpeedMultiplier = 1f;
+    public float runAnimationSpeedMultiplier = 1f;
+    public float turnSpeed = 360f;
+
     private NavMeshAgent agent;
     private ZombieState currentState;
 
@@ -52,10 +57,16 @@ public class ZombieAI : MonoBehaviour
     private bool playerDead;
     private bool hasWokenUp;
     private bool hasScreamed;
+    private bool reachedPatrolPoint;
 
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+
+        if (zombieAnimator == null)
+        {
+            zombieAnimator = GetComponent<Animator>();
+        }
     }
 
     void Start()
@@ -67,6 +78,7 @@ public class ZombieAI : MonoBehaviour
         if (agent != null && agent.isOnNavMesh)
         {
             agent.isStopped = true;
+            agent.updateRotation = false;
         }
 
         if (wakeUpOnStart)
@@ -80,6 +92,7 @@ public class ZombieAI : MonoBehaviour
         if (player == null || playerDead)
             return;
 
+
         switch (currentState)
         {
             case ZombieState.Sleeping:
@@ -87,6 +100,7 @@ public class ZombieAI : MonoBehaviour
 
             case ZombieState.Patrol:
                 UpdatePatrol();
+                RotateTowardsMovement();
                 break;
 
             case ZombieState.Screaming:
@@ -94,6 +108,7 @@ public class ZombieAI : MonoBehaviour
 
             case ZombieState.Chase:
                 UpdateChase();
+                RotateTowardsPlayer();
                 break;
         }
     }
@@ -131,50 +146,78 @@ public class ZombieAI : MonoBehaviour
     {
         currentState = ZombieState.Patrol;
 
+        patrolWaitTimer = 0f;
+        reachedPatrolPoint = false;
+
         SetAnimation(true, false, false);
 
         if (agent != null && agent.isOnNavMesh)
         {
             agent.isStopped = false;
             agent.speed = patrolSpeed;
+            agent.stoppingDistance = 0.1f;
+            agent.autoBraking = true;
+            agent.updateRotation = false;
         }
 
         GoToPatrolPoint();
     }
 
     private void UpdatePatrol()
+{
+    if (CanSeePlayer())
     {
-        if (CanSeePlayer())
+        StartScream();
+        return;
+    }
+
+    if (agent == null || !agent.isOnNavMesh)
+        return;
+
+    if (agent.pathPending)
+        return;
+
+    bool reachedDestination =
+        !agent.hasPath ||
+        agent.remainingDistance <= patrolPointDistance;
+
+    if (!reachedPatrolPoint && reachedDestination)
+    {
+        reachedPatrolPoint = true;
+
+        agent.isStopped = true;
+        agent.ResetPath();
+
+        SetAnimation(false, false, false);
+
+        patrolWaitTimer = 0f;
+
+        Debug.Log(
+            "REACHED: " +
+            patrolPoints[currentPatrolIndex].name
+        );
+    }
+
+    if (reachedPatrolPoint)
+    {
+        patrolWaitTimer += Time.deltaTime;
+
+        if (patrolWaitTimer >= patrolWaitTime)
         {
-            StartScream();
-            return;
-        }
+            currentPatrolIndex++;
 
-        if (agent == null || !agent.isOnNavMesh)
-            return;
-
-        if (agent.pathPending)
-            return;
-
-        if (agent.remainingDistance <= patrolPointDistance)
-        {
-            patrolWaitTimer += Time.deltaTime;
-
-            if (patrolWaitTimer >= patrolWaitTime)
+            if (currentPatrolIndex >= patrolPoints.Length)
             {
-                patrolWaitTimer = 0f;
-
-                currentPatrolIndex++;
-
-                if (currentPatrolIndex >= patrolPoints.Length)
-                {
-                    currentPatrolIndex = 0;
-                }
-
-                GoToPatrolPoint();
+                currentPatrolIndex = 0;
             }
+
+            reachedPatrolPoint = false;
+            patrolWaitTimer = 0f;
+
+            GoToPatrolPoint();
         }
     }
+}
 
     private void GoToPatrolPoint()
     {
@@ -184,15 +227,59 @@ public class ZombieAI : MonoBehaviour
         if (patrolPoints == null || patrolPoints.Length == 0)
             return;
 
-        Transform targetPoint = patrolPoints[currentPatrolIndex];
+        Transform targetPoint =
+            patrolPoints[currentPatrolIndex];
 
         if (targetPoint == null)
             return;
 
+        NavMeshHit navMeshHit;
+
+        if (!NavMesh.SamplePosition(
+            targetPoint.position,
+            out navMeshHit,
+            1.5f,
+            NavMesh.AllAreas))
+        {
+            Debug.LogWarning(
+                targetPoint.name +
+                " NOT FOUND ON NAVMESH"
+            );
+
+            return;
+        }
+
+        NavMeshPath path = new NavMeshPath();
+
+        bool pathFound = agent.CalculatePath(
+            navMeshHit.position,
+            path
+        );
+
+        if (!pathFound ||
+            path.status != NavMeshPathStatus.PathComplete)
+        {
+            Debug.LogWarning(
+                "NO COMPLETE PATH TO: " +
+                targetPoint.name
+            );
+
+            return;
+        }
+
         agent.isStopped = false;
         agent.speed = patrolSpeed;
+        agent.stoppingDistance = 0.1f;
+        agent.updateRotation = false;
 
-        agent.SetDestination(targetPoint.position);
+        reachedPatrolPoint = false;
+
+        agent.SetPath(path);
+
+        Debug.Log(
+            "GOING TO: " +
+            targetPoint.name
+        );
     }
 
     private void StartScream()
@@ -219,7 +306,8 @@ public class ZombieAI : MonoBehaviour
 
         SetAnimation(false, true, false);
 
-        if (zombieAudioSource != null && screamSound != null)
+        if (zombieAudioSource != null &&
+            screamSound != null)
         {
             zombieAudioSource.PlayOneShot(screamSound);
         }
@@ -239,6 +327,8 @@ public class ZombieAI : MonoBehaviour
         {
             agent.isStopped = false;
             agent.speed = chaseSpeed;
+            agent.stoppingDistance = killDistance;
+            agent.updateRotation = false;
         }
     }
 
@@ -278,7 +368,6 @@ public class ZombieAI : MonoBehaviour
             return false;
 
         Vector3 flatDirection = directionToPlayer;
-
         flatDirection.y = 0f;
 
         float angle = Vector3.Angle(
@@ -317,6 +406,45 @@ public class ZombieAI : MonoBehaviour
         transform.rotation = Quaternion.LookRotation(direction);
     }
 
+    private void RotateTowardsMovement()
+    {
+        if (agent == null || !agent.isOnNavMesh || agent.isStopped)
+            return;
+
+        Vector3 direction = agent.desiredVelocity;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.01f)
+            return;
+
+        RotateTowards(direction);
+    }
+
+    private void RotateTowardsPlayer()
+    {
+        if (player == null)
+            return;
+
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.01f)
+            return;
+
+        RotateTowards(direction);
+    }
+
+    private void RotateTowards(Vector3 direction)
+    {
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation,
+            targetRotation,
+            turnSpeed * Time.deltaTime
+        );
+    }
+
     private void SetAnimation(
         bool walking,
         bool screaming,
@@ -325,10 +453,36 @@ public class ZombieAI : MonoBehaviour
         if (zombieAnimator == null)
             return;
 
-        zombieAnimator.SetBool("IsWalking", walking);
-        zombieAnimator.SetBool("IsScreaming", screaming);
-        zombieAnimator.SetBool("IsChasing", chasing);
+        zombieAnimator.SetBool(
+            "IsWalking",
+            walking
+        );
+
+        zombieAnimator.SetBool(
+            "IsScreaming",
+            screaming
+        );
+
+        zombieAnimator.SetBool(
+            "IsChasing",
+            chasing
+        );
+
+        if (chasing)
+        {
+            zombieAnimator.speed = runAnimationSpeedMultiplier;
+        }
+        else if (walking)
+        {
+            zombieAnimator.speed = walkAnimationSpeedMultiplier;
+        }
+        else
+        {
+            zombieAnimator.speed = 1f;
+        }
     }
+
+    
 
     private void KillPlayer()
     {
