@@ -47,6 +47,7 @@ public class ZombieAI : MonoBehaviour
     public float walkAnimationSpeedMultiplier = 1f;
     public float runAnimationSpeedMultiplier = 1f;
     public float turnSpeed = 360f;
+    public float turnBeforeMoveAngle = 55f;
 
     private NavMeshAgent agent;
     private ZombieState currentState;
@@ -100,7 +101,6 @@ public class ZombieAI : MonoBehaviour
 
             case ZombieState.Patrol:
                 UpdatePatrol();
-                RotateTowardsMovement();
                 break;
 
             case ZombieState.Screaming:
@@ -108,7 +108,6 @@ public class ZombieAI : MonoBehaviour
 
             case ZombieState.Chase:
                 UpdateChase();
-                RotateTowardsPlayer();
                 break;
         }
     }
@@ -164,60 +163,58 @@ public class ZombieAI : MonoBehaviour
     }
 
     private void UpdatePatrol()
-{
-    if (CanSeePlayer())
     {
-        StartScream();
-        return;
-    }
-
-    if (agent == null || !agent.isOnNavMesh)
-        return;
-
-    if (agent.pathPending)
-        return;
-
-    bool reachedDestination =
-        !agent.hasPath ||
-        agent.remainingDistance <= patrolPointDistance;
-
-    if (!reachedPatrolPoint && reachedDestination)
-    {
-        reachedPatrolPoint = true;
-
-        agent.isStopped = true;
-        agent.ResetPath();
-
-        SetAnimation(false, false, false);
-
-        patrolWaitTimer = 0f;
-
-        Debug.Log(
-            "REACHED: " +
-            patrolPoints[currentPatrolIndex].name
-        );
-    }
-
-    if (reachedPatrolPoint)
-    {
-        patrolWaitTimer += Time.deltaTime;
-
-        if (patrolWaitTimer >= patrolWaitTime)
+        if (CanSeePlayer())
         {
-            currentPatrolIndex++;
+            StartScream();
+            return;
+        }
 
-            if (currentPatrolIndex >= patrolPoints.Length)
-            {
-                currentPatrolIndex = 0;
-            }
+        if (agent == null || !agent.isOnNavMesh)
+            return;
 
-            reachedPatrolPoint = false;
+        if (agent.pathPending)
+            return;
+
+        UpdateFacingAndMovement(agent.steeringTarget, false);
+
+        bool reachedDestination =
+            !agent.hasPath ||
+            agent.remainingDistance <= patrolPointDistance;
+
+        if (!reachedPatrolPoint && reachedDestination)
+        {
+            reachedPatrolPoint = true;
+
+            agent.isStopped = true;
+            agent.ResetPath();
+
+            SetAnimation(false, false, false);
+
             patrolWaitTimer = 0f;
 
-            GoToPatrolPoint();
+        }
+
+        if (reachedPatrolPoint)
+        {
+            patrolWaitTimer += Time.deltaTime;
+
+            if (patrolWaitTimer >= patrolWaitTime)
+            {
+                currentPatrolIndex++;
+
+                if (currentPatrolIndex >= patrolPoints.Length)
+                {
+                    currentPatrolIndex = 0;
+                }
+
+                reachedPatrolPoint = false;
+                patrolWaitTimer = 0f;
+
+                GoToPatrolPoint();
+            }
         }
     }
-}
 
     private void GoToPatrolPoint()
     {
@@ -276,10 +273,6 @@ public class ZombieAI : MonoBehaviour
 
         agent.SetPath(path);
 
-        Debug.Log(
-            "GOING TO: " +
-            targetPoint.name
-        );
     }
 
     private void StartScream()
@@ -338,6 +331,8 @@ public class ZombieAI : MonoBehaviour
             return;
 
         agent.SetDestination(player.position);
+
+        UpdateFacingAndMovement(player.position, true);
 
         float distanceToPlayer = Vector3.Distance(
             transform.position,
@@ -406,43 +401,34 @@ public class ZombieAI : MonoBehaviour
         transform.rotation = Quaternion.LookRotation(direction);
     }
 
-    private void RotateTowardsMovement()
+    private void UpdateFacingAndMovement(Vector3 lookTarget, bool chasing)
     {
-        if (agent == null || !agent.isOnNavMesh || agent.isStopped)
+        if (agent == null || !agent.isOnNavMesh)
             return;
 
-        Vector3 direction = agent.desiredVelocity;
+        Vector3 direction = lookTarget - transform.position;
         direction.y = 0f;
 
         if (direction.sqrMagnitude <= 0.01f)
             return;
 
-        RotateTowards(direction);
-    }
-
-    private void RotateTowardsPlayer()
-    {
-        if (player == null)
-            return;
-
-        Vector3 direction = player.position - transform.position;
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude <= 0.01f)
-            return;
+        float turnAngle = Vector3.Angle(transform.forward, direction);
 
         RotateTowards(direction);
+
+        bool shouldMove = turnAngle <= turnBeforeMoveAngle;
+
+        agent.isStopped = !shouldMove;
+
+        SetAnimation(!chasing && shouldMove, false, chasing && shouldMove);
     }
 
     private void RotateTowards(Vector3 direction)
     {
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
-
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation,
-            targetRotation,
-            turnSpeed * Time.deltaTime
-        );
+            Quaternion.LookRotation(direction),
+            turnSpeed * Time.deltaTime);
     }
 
     private void SetAnimation(
@@ -468,13 +454,15 @@ public class ZombieAI : MonoBehaviour
             chasing
         );
 
+        float movementRatio = GetMovementAnimationRatio(chasing);
+
         if (chasing)
         {
-            zombieAnimator.speed = runAnimationSpeedMultiplier;
+            zombieAnimator.speed = runAnimationSpeedMultiplier * movementRatio;
         }
         else if (walking)
         {
-            zombieAnimator.speed = walkAnimationSpeedMultiplier;
+            zombieAnimator.speed = walkAnimationSpeedMultiplier * movementRatio;
         }
         else
         {
@@ -482,8 +470,20 @@ public class ZombieAI : MonoBehaviour
         }
     }
 
-    
+    private float GetMovementAnimationRatio(bool chasing)
+    {
+        if (agent == null || !agent.isOnNavMesh)
+            return 1f;
 
+        float referenceSpeed = chasing ? chaseSpeed : patrolSpeed;
+
+        if (referenceSpeed <= 0.01f)
+            return 1f;
+
+        float speedRatio = agent.velocity.magnitude / referenceSpeed;
+
+        return Mathf.Clamp(speedRatio, 0.85f, 1.25f);
+    }
     private void KillPlayer()
     {
         playerDead = true;

@@ -119858,7 +119858,7 @@ MonoBehaviour:
   patrolPoints:
   - {fileID: 1217834900}
   - {fileID: 16234085}
-  patrolSpeed: 1.3
+  patrolSpeed: 0.9
   patrolWaitTime: 1.5
   patrolPointDistance: 0.35
   detectionRange: 12
@@ -119870,10 +119870,12 @@ MonoBehaviour:
   screamDuration: 2.5
   zombieAudioSource: {fileID: 847182590}
   screamSound: {fileID: 8300000, guid: 88ccdc67b1c28b947bbb15f01fee37f5, type: 3}
-  chaseSpeed: 4
+  chaseSpeed: 3
   killDistance: 1
-  walkAnimationSpeedMultiplier: 0.75
+  walkAnimationSpeedMultiplier: 1.08
   runAnimationSpeedMultiplier: 1
+  turnSpeed: 240
+  turnBeforeMoveAngle: 30
 --- !u!82 &847182590
 AudioSource:
   m_ObjectHideFlags: 0
