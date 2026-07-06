@@ -70617,6 +70617,7 @@ GameObject:
   - component: {fileID: 517827088}
   - component: {fileID: 517827090}
   - component: {fileID: 517827089}
+  - component: {fileID: 517827091}
   m_Layer: 5
   m_Name: GameOverPanel
   m_TagString: Untagged
@@ -70683,6 +70684,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 517827087}
   m_CullTransparentMesh: 1
+--- !u!225 &517827091
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517827087}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!43 &520990087
 Mesh:
   m_ObjectHideFlags: 0
@@ -84505,8 +84518,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameOverManager
   gameOverPanel: {fileID: 517827087}
+  gameOverCanvasGroup: {fileID: 517827091}
   player: {fileID: 1958503466}
   gameplayUI: {fileID: 1407245127}
+  fadeDelay: 0.5
+  fadeDuration: 2
 --- !u!4 &611876030
 Transform:
   m_ObjectHideFlags: 0
