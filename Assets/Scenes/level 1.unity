@@ -153235,6 +153235,7 @@ GameObject:
   - component: {fileID: 1061365168}
   - component: {fileID: 1061365167}
   - component: {fileID: 1061365166}
+  - component: {fileID: 1061365170}
   m_Layer: 0
   m_Name: Plane
   m_TagString: Untagged
@@ -153336,6 +153337,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1061365170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1061365165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eea7db0e8150ecd47928643f8f4f61b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaterScroll
+  scrollSpeed: {x: 0.02, y: 0.01}
 --- !u!1 &1065367530
 GameObject:
   m_ObjectHideFlags: 0
