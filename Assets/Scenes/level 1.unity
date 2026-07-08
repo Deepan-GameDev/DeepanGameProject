@@ -152030,7 +152030,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eea7db0e8150ecd47928643f8f4f61b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaterScroll
-  scrollSpeed: {x: 0.02, y: 0.01}
+  scrollSpeed: {x: 0.06, y: 0.05}
 --- !u!1 &1065367530
 GameObject:
   m_ObjectHideFlags: 0
