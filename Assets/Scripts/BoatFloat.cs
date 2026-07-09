@@ -24,7 +24,9 @@ public class BoatFloat : MonoBehaviour
     {
         float yOffset = Mathf.Sin(Time.time * floatSpeed) * floatHeight;
 
-        transform.position = startPosition + Vector3.up * yOffset;
+        Vector3 currentPosition = transform.position;
+        currentPosition.y = startPosition.y + yOffset;
+        transform.position = currentPosition;
 
         float xRock = Mathf.Sin(Time.time * rockSpeed) * rockAngleX;
         float zRock = Mathf.Cos(Time.time * rockSpeed * 0.8f) * rockAngleZ;
