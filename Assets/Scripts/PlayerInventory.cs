@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerInventory : MonoBehaviour
 {
     public bool hasKey = false;
+    private bool hasBoatKey = false;
 
     public void AddKey()
     {
@@ -20,4 +21,19 @@ public class PlayerInventory : MonoBehaviour
     {
         hasKey = false;
     }
+
+    public void AddBoatKey()
+{
+    hasBoatKey = true;
+}
+
+public bool HasBoatKey()
+{
+    return hasBoatKey;
+}
+
+public void UseBoatKey()
+{
+    hasBoatKey = false;
+}
 }
