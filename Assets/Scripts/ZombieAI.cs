@@ -5,9 +5,8 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class ZombieAI : MonoBehaviour
 {
-    private enum ZombieState { Sleeping, WakingUp, Patrol, Waiting, Screaming, Chase, Dead }
+    private enum ZombieState { Patrol, Waiting, Screaming, Chase, Dead }
 
-    private static readonly int WakeUpTrigger = Animator.StringToHash("WakeUp");
     private static readonly int IsWalking = Animator.StringToHash("IsWalking");
     private static readonly int IsScreaming = Animator.StringToHash("IsScreaming");
     private static readonly int IsChasing = Animator.StringToHash("IsChasing");
@@ -17,10 +16,6 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private GameOverManager gameOverManager;
     [SerializeField] private Animator zombieAnimator;
-
-    [Header("Wake Up")]
-    [SerializeField] private string wakeUpStateName = "Base Layer.Zombie Stand Up";
-    [SerializeField] private float wakeUpFailSafeDuration = 5f;
 
     [Header("Patrol")]
     [SerializeField] private Transform[] patrolPoints;
@@ -49,15 +44,11 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private float turnSpeed = 240f;
     [SerializeField] private float movingAnimationThreshold = 0.08f;
 
-    public Transform PlayerTransform => player;
-
     private NavMeshAgent agent;
     private ZombieState state;
     private int patrolIndex;
-    private bool hasWokenUp;
     private bool hasScreamed;
     private bool playerDead;
-    private Quaternion sleepingRotation;
 
     private void Awake()
     {
@@ -67,14 +58,14 @@ public class ZombieAI : MonoBehaviour
         // The agent owns translation only; this script is the single owner of yaw.
         agent.updateRotation = false;
         agent.autoBraking = true;
-        sleepingRotation = transform.rotation;
     }
 
     private void Start()
     {
-        state = ZombieState.Sleeping;
-        StopAgent(true);
-        SetAnimation(false, false, false, 0f);
+        ActivateAnimator();
+        state = ZombieState.Patrol;
+        ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
+        GoToPatrolPoint();
     }
 
     private void Update()
@@ -83,10 +74,6 @@ public class ZombieAI : MonoBehaviour
 
         switch (state)
         {
-            case ZombieState.Sleeping:
-                // A sleeping clip must never be allowed to change the actor's world yaw.
-                transform.rotation = sleepingRotation;
-                break;
             case ZombieState.Patrol:
                 UpdatePatrol();
                 break;
@@ -96,51 +83,13 @@ public class ZombieAI : MonoBehaviour
         }
     }
 
-    public void WakeUp() => WakeUpZombie();
-
-    public void WakeUpZombie()
+    private void ActivateAnimator()
     {
-        if (hasWokenUp || playerDead) return;
-        hasWokenUp = true;
-        StartCoroutine(WakeUpRoutine());
-    }
-
-    private IEnumerator WakeUpRoutine()
-    {
-        state = ZombieState.WakingUp;
-        StopAgent(true);
+        if (zombieAnimator == null) return;
+        zombieAnimator.enabled = true;
+        zombieAnimator.Rebind();
+        zombieAnimator.Update(0f);
         SetAnimation(false, false, false, 0f);
-        zombieAnimator.SetTrigger(WakeUpTrigger);
-
-        // Do not use a guessed clip duration. The zombie stays in the coffin until
-        // the Animator has actually finished the configured wake-up state.
-        yield return null;
-        float elapsed = 0f;
-        bool wakeStateWasEntered = false;
-        while (elapsed < wakeUpFailSafeDuration)
-        {
-            AnimatorStateInfo info = zombieAnimator.GetCurrentAnimatorStateInfo(0);
-            bool inWakeState = info.IsName(wakeUpStateName);
-            wakeStateWasEntered |= inWakeState;
-
-            // This controller blends out just before normalized time reaches 1.
-            // Waiting for either the clip end or that authored exit catches both
-            // cases without tying gameplay to a manually entered duration.
-            if (wakeStateWasEntered && !zombieAnimator.IsInTransition(0) && (!inWakeState || info.normalizedTime >= 0.99f))
-                break;
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        StartPatrol();
-    }
-
-    private void StartPatrol()
-    {
-        state = ZombieState.Patrol;
-        ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-        GoToPatrolPoint();
     }
 
     private void UpdatePatrol()

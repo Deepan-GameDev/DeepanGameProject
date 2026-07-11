@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -30,9 +30,16 @@ public class Player : MonoBehaviour
     public float moveInputDeadZone = 0.08f;
     public float collisionSkinWidth = 0.03f;
     public float stepHeight = 0.45f;
-    public float groundSnapDistance = 0.25f;
+    public float groundSnapDistance = 0.35f;
     public float maxWalkableSlope = 55f;
     public float stepSearchDistance = 0.08f;
+
+    [Header("Camera Collision")]
+    public bool preventCameraClipping = true;
+    public LayerMask cameraCollisionLayers = ~0;
+    public float cameraCollisionRadius = 0.08f;
+    public float cameraSkinWidth = 0.02f;
+    public float safeNearClipPlane = 0.03f;
 
     [Header("Footsteps")]
     public AudioClip[] footstepClips;
@@ -44,71 +51,80 @@ public class Player : MonoBehaviour
     [Header("Torch")]
     public TorchSway torchSway;
 
+    private const int CollisionIterations = 5;
+    private const float Gravity = -28f;
+    private const float TerminalFallSpeed = -35f;
+
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private AudioSource footstepSource;
     private AudioClip generatedFootstepClip;
+    private Camera playerCamera;
+
     private float footstepTimer;
     private float pendingYaw;
+    private float verticalVelocity;
+    private float currentCameraHeight;
     private Quaternion playerRotation;
+    private Vector3 cameraBaseLocalPosition;
     private bool isCrouching;
     private bool runPressed;
     private bool crouchPressed;
+    private bool groundedLastFixedUpdate;
     private Vector2 moveInput;
     private float currentRunStamina;
     private float rechargeTimer;
     private bool runExhausted;
+
     private readonly Collider[] standCheckHits = new Collider[8];
-    private readonly RaycastHit[] movementHits = new RaycastHit[8];
-    private readonly Collider[] overlapHits = new Collider[8];
-    private readonly Collider[] recoveryHits = new Collider[8];
+    private readonly RaycastHit[] movementHits = new RaycastHit[12];
+    private readonly Collider[] overlapHits = new Collider[12];
+    private readonly Collider[] recoveryHits = new Collider[12];
+    private readonly RaycastHit[] groundHits = new RaycastHit[8];
+    private readonly RaycastHit[] cameraCastHits = new RaycastHit[8];
+    private readonly Collider[] cameraOverlapHits = new Collider[8];
 
     public void AddYawInput(float yawDegrees)
     {
         pendingYaw += yawDegrees;
     }
 
-  public void SetMoveInput(Vector2 input)
-{
-    moveInput = input.sqrMagnitude < moveInputDeadZone * moveInputDeadZone
-        ? Vector2.zero
-        : Vector2.ClampMagnitude(input, 1f);
+    public void SetMoveInput(Vector2 input)
+    {
+        moveInput = input.sqrMagnitude < moveInputDeadZone * moveInputDeadZone
+            ? Vector2.zero
+            : Vector2.ClampMagnitude(input, 1f);
+    }
 
-}
+    public void ToggleRun()
+    {
+        if (runExhausted || currentRunStamina <= 0f)
+        {
+            return;
+        }
 
-public void ToggleRun()
-{
-    if (runExhausted)
-        return;
+        runPressed = !runPressed;
+    }
 
-    if (currentRunStamina <= 0f)
-        return;
+    public void SetCrouch(bool value)
+    {
+        crouchPressed = value;
+    }
 
-    runPressed = !runPressed;
-}
-
-public void SetCrouch(bool value)
-{
-    crouchPressed = value;
-}
-
-    
-
-    void Awake()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
         footstepSource = GetComponent<AudioSource>();
-        if (footstepClips == null || footstepClips.Length == 0)
-{
-    generatedFootstepClip = CreateFootstepClip();
-}
 
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.useGravity = false;
         rb.angularVelocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
         rb.sleepThreshold = 0f;
+
         playerRotation = rb.rotation;
 
         capsule.radius = bodyRadius;
@@ -125,26 +141,37 @@ public void SetCrouch(bool value)
             cameraTransform = Camera.main.transform;
         }
 
-        if (footstepClips == null)
+        if (cameraTransform != null)
+        {
+            cameraBaseLocalPosition = cameraTransform.localPosition;
+            currentCameraHeight = cameraBaseLocalPosition.y;
+            playerCamera = cameraTransform.GetComponent<Camera>();
+
+            if (playerCamera != null)
+            {
+                playerCamera.nearClipPlane = Mathf.Min(playerCamera.nearClipPlane, safeNearClipPlane);
+            }
+        }
+
+        if (footstepClips == null || footstepClips.Length == 0)
         {
             generatedFootstepClip = CreateFootstepClip();
         }
-        currentRunStamina = maxRunStamina;
 
+        currentRunStamina = maxRunStamina;
         UpdateRunCooldownUI();
     }
 
-  void Update()
-{
-    isCrouching = crouchPressed || !CanStandUp();
-
-    UpdateRunStamina();
-
-    UpdateFootsteps();
-}
-  void FixedUpdate()
+    private void Update()
     {
-        UpdateCrouch(Time.fixedDeltaTime);
+        isCrouching = crouchPressed || !CanStandUp();
+        UpdateRunStamina();
+        UpdateFootsteps();
+    }
+
+    private void FixedUpdate()
+    {
+        UpdateCrouchCollider(Time.fixedDeltaTime);
 
         if (Mathf.Abs(pendingYaw) > 0.001f)
         {
@@ -153,39 +180,56 @@ public void SetCrouch(bool value)
         }
 
         rb.angularVelocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
         rb.MoveRotation(playerRotation);
 
-        StabilizeGroundedVelocity();
+        Vector3 position = RecoverFromOverlaps(rb.position);
+        bool grounded = ProbeGround(position, groundSnapDistance + stepHeight, out RaycastHit groundHit);
+        groundedLastFixedUpdate = grounded;
 
         float speed = GetCurrentSpeed();
         Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
-        Vector3 worldMove = playerRotation * localMove * speed * Time.fixedDeltaTime;
-        MoveWithCollision(worldMove, speed);
-    }
+        Vector3 horizontalVelocity = playerRotation * localMove * speed;
+        Vector3 horizontalMove = horizontalVelocity * Time.fixedDeltaTime;
 
-    private void StabilizeGroundedVelocity()
-    {
-        if (!IsGrounded())
+        position = MoveHorizontal(position, horizontalMove, grounded);
+
+        if (grounded && verticalVelocity <= 0f)
         {
-            return;
+            position = SnapToGround(position, Mathf.Max(groundSnapDistance, stepHeight), out bool snapped);
+            verticalVelocity = snapped ? -2f : 0f;
+        }
+        else
+        {
+            verticalVelocity = Mathf.Max(TerminalFallSpeed, verticalVelocity + Gravity * Time.fixedDeltaTime);
+            position = MoveVertical(position, verticalVelocity * Time.fixedDeltaTime, out bool hitGround);
+
+            if (hitGround)
+            {
+                verticalVelocity = -2f;
+                groundedLastFixedUpdate = true;
+            }
         }
 
-        Vector3 velocity = rb.linearVelocity;
-        if (velocity.y < 0f)
-        {
-            velocity.y = 0f;
-            rb.linearVelocity = velocity;
-        }
+        rb.MovePosition(position);
     }
 
-    private void MoveWithCollision(Vector3 movement, float speed)
+    private void LateUpdate()
     {
-        Vector3 startPosition = RecoverFromOverlaps(rb.position);
+        UpdateCameraPosition(Time.deltaTime);
+    }
+
+    private Vector3 MoveHorizontal(Vector3 position, Vector3 movement, bool grounded)
+    {
+        if (movement.sqrMagnitude <= 0.0000001f)
+        {
+            return position;
+        }
+
+        Vector3 startPosition = position;
         Vector3 remaining = movement;
-        Vector3 position = startPosition;
-        bool movedHorizontally = movement.sqrMagnitude > 0.000001f;
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < CollisionIterations; i++)
         {
             float distance = remaining.magnitude;
             if (distance <= 0.0001f)
@@ -206,7 +250,7 @@ public void SetCrouch(bool value)
                 break;
             }
 
-            if (TryStep(position, direction, distance, out Vector3 steppedPosition))
+            if (grounded && TryStep(position, direction, distance, out Vector3 steppedPosition))
             {
                 position = steppedPosition;
                 remaining = movement - Flatten(position - startPosition);
@@ -218,54 +262,78 @@ public void SetCrouch(bool value)
             position += direction * travelDistance;
 
             Vector3 blockedMovement = remaining - direction * travelDistance;
-            Vector3 slideNormal = Flatten(hit.normal).sqrMagnitude > 0.0001f
-                ? Flatten(hit.normal).normalized
-                : hit.normal;
+            Vector3 slideNormal = Flatten(hit.normal);
+            if (slideNormal.sqrMagnitude <= 0.0001f)
+            {
+                break;
+            }
 
-            remaining = Vector3.ProjectOnPlane(blockedMovement, slideNormal);
+            remaining = Vector3.ProjectOnPlane(blockedMovement, slideNormal.normalized);
             remaining.y = 0f;
         }
 
-        if (movedHorizontally)
+        return position;
+    }
+
+    private Vector3 MoveVertical(Vector3 position, float verticalMove, out bool hitGround)
+    {
+        hitGround = false;
+        if (Mathf.Abs(verticalMove) <= 0.0001f)
         {
-            position = SnapToGround(position, speed);
+            return position;
         }
 
-        rb.MovePosition(position);
+        Vector3 direction = verticalMove > 0f ? Vector3.up : Vector3.down;
+        float distance = Mathf.Abs(verticalMove);
+
+        if (!CastPlayer(position, direction, distance + collisionSkinWidth, out RaycastHit hit))
+        {
+            return position + direction * distance;
+        }
+
+        float travelDistance = Mathf.Max(0f, hit.distance - collisionSkinWidth);
+        if (direction == Vector3.down && IsWalkable(hit.normal))
+        {
+            hitGround = true;
+        }
+
+        return position + direction * travelDistance;
     }
 
     private bool TryStep(Vector3 position, Vector3 direction, float distance, out Vector3 steppedPosition)
     {
         steppedPosition = position;
 
-        if (distance <= 0.0001f || direction.y != 0f)
-        {
-            return false;
-        }
-
-        Vector3 horizontalDirection = Flatten(direction).normalized;
+        Vector3 horizontalDirection = Flatten(direction);
         if (horizontalDirection.sqrMagnitude <= 0.0001f)
         {
             return false;
         }
 
+        horizontalDirection.Normalize();
         Vector3 raisedPosition = position + Vector3.up * stepHeight;
+
         if (!IsCapsuleClear(raisedPosition))
         {
             return false;
         }
 
-        if (CastPlayer(raisedPosition, horizontalDirection, distance + stepSearchDistance + collisionSkinWidth, out RaycastHit raisedHit))
+        float stepForwardDistance = distance + stepSearchDistance;
+        if (CastPlayer(raisedPosition, horizontalDirection, stepForwardDistance + collisionSkinWidth, out RaycastHit raisedHit))
         {
-            distance = Mathf.Max(0f, raisedHit.distance - collisionSkinWidth);
-            if (distance <= 0.0001f)
+            if (!IsWalkable(raisedHit.normal))
             {
-                return false;
+                stepForwardDistance = Mathf.Max(0f, raisedHit.distance - collisionSkinWidth);
             }
         }
 
-        Vector3 forwardPosition = raisedPosition + horizontalDirection * (distance + stepSearchDistance);
-        if (!CastPlayer(forwardPosition, Vector3.down, stepHeight + groundSnapDistance, out RaycastHit groundHit))
+        if (stepForwardDistance <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 forwardPosition = raisedPosition + horizontalDirection * stepForwardDistance;
+        if (!CastPlayer(forwardPosition, Vector3.down, stepHeight + groundSnapDistance + collisionSkinWidth, out RaycastHit groundHit))
         {
             return false;
         }
@@ -275,8 +343,8 @@ public void SetCrouch(bool value)
             return false;
         }
 
-        float stepUpAmount = stepHeight - groundHit.distance;
-        if (stepUpAmount < 0.02f || stepUpAmount > stepHeight)
+        float stepUpAmount = stepHeight - Mathf.Max(0f, groundHit.distance - collisionSkinWidth);
+        if (stepUpAmount < 0.015f || stepUpAmount > stepHeight + 0.001f)
         {
             return false;
         }
@@ -285,9 +353,12 @@ public void SetCrouch(bool value)
         return IsCapsuleClear(steppedPosition);
     }
 
-    private Vector3 SnapToGround(Vector3 position, float speed)
+    private Vector3 SnapToGround(Vector3 position, float snapDistance, out bool snapped)
     {
-        if (!CastPlayer(position + Vector3.up * collisionSkinWidth, Vector3.down, groundSnapDistance + collisionSkinWidth, out RaycastHit groundHit))
+        snapped = false;
+        Vector3 castPosition = position + Vector3.up * collisionSkinWidth;
+
+        if (!CastPlayer(castPosition, Vector3.down, snapDistance + collisionSkinWidth, out RaycastHit groundHit))
         {
             return position;
         }
@@ -297,49 +368,95 @@ public void SetCrouch(bool value)
             return position;
         }
 
-        float snapDistance = Mathf.Max(0f, groundHit.distance - collisionSkinWidth);
-        float maxSnapThisStep = Mathf.Max(groundSnapDistance, speed * Time.fixedDeltaTime);
-        if (snapDistance > maxSnapThisStep)
+        float downDistance = Mathf.Max(0f, groundHit.distance - collisionSkinWidth);
+        Vector3 targetPosition = position + Vector3.down * downDistance;
+
+        if (!IsCapsuleClear(targetPosition))
         {
             return position;
         }
 
-        Vector3 snapped = position + Vector3.down * snapDistance;
-        return IsCapsuleClear(snapped) ? snapped : position;
+        snapped = true;
+        return targetPosition;
     }
 
-    private Vector3 RecoverFromOverlaps(Vector3 position)
+    private bool ProbeGround(Vector3 position, float distance, out RaycastHit bestHit)
     {
-        GetCapsulePoints(position, out Vector3 bottom, out Vector3 top, out float radius);
-        int hitCount = Physics.OverlapCapsuleNonAlloc(
+        GetCapsulePoints(position + Vector3.up * collisionSkinWidth, out Vector3 bottom, out Vector3 top, out float radius);
+        int hitCount = Physics.CapsuleCastNonAlloc(
             bottom,
             top,
             radius,
-            recoveryHits,
+            Vector3.down,
+            groundHits,
+            distance + collisionSkinWidth,
             groundLayers,
             QueryTriggerInteraction.Ignore);
 
-        Vector3 recoveredPosition = position;
+        bestHit = default;
+        float closestDistance = float.PositiveInfinity;
 
         for (int i = 0; i < hitCount; i++)
         {
-            Collider hit = recoveryHits[i];
-            if (hit == null || hit == capsule)
+            RaycastHit hit = groundHits[i];
+            if (hit.collider == null || IsOwnCollider(hit.collider) || !IsWalkable(hit.normal))
             {
                 continue;
             }
 
-            if (Physics.ComputePenetration(
-                capsule,
-                recoveredPosition,
-                playerRotation,
-                hit,
-                hit.transform.position,
-                hit.transform.rotation,
-                out Vector3 direction,
-                out float distance))
+            if (hit.distance < closestDistance)
             {
-                recoveredPosition += direction * Mathf.Min(distance + collisionSkinWidth, bodyRadius);
+                closestDistance = hit.distance;
+                bestHit = hit;
+            }
+        }
+
+        return closestDistance < float.PositiveInfinity;
+    }
+
+    private Vector3 RecoverFromOverlaps(Vector3 position)
+    {
+        Vector3 recoveredPosition = position;
+
+        for (int iteration = 0; iteration < 3; iteration++)
+        {
+            GetCapsulePoints(recoveredPosition, out Vector3 bottom, out Vector3 top, out float radius);
+            int hitCount = Physics.OverlapCapsuleNonAlloc(
+                bottom,
+                top,
+                radius,
+                recoveryHits,
+                groundLayers,
+                QueryTriggerInteraction.Ignore);
+
+            bool recovered = false;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider hit = recoveryHits[i];
+                if (hit == null || IsOwnCollider(hit))
+                {
+                    continue;
+                }
+
+                if (Physics.ComputePenetration(
+                    capsule,
+                    recoveredPosition,
+                    playerRotation,
+                    hit,
+                    hit.transform.position,
+                    hit.transform.rotation,
+                    out Vector3 direction,
+                    out float distance))
+                {
+                    recoveredPosition += direction * Mathf.Min(distance + collisionSkinWidth, bodyRadius);
+                    recovered = true;
+                }
+            }
+
+            if (!recovered)
+            {
+                break;
             }
         }
 
@@ -371,7 +488,7 @@ public void SetCrouch(bool value)
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit hit = movementHits[i];
-            if (hit.collider == null || hit.collider == capsule)
+            if (hit.collider == null || IsOwnCollider(hit.collider))
             {
                 continue;
             }
@@ -405,7 +522,7 @@ public void SetCrouch(bool value)
         for (int i = 0; i < hitCount; i++)
         {
             Collider hit = overlapHits[i];
-            if (hit != null && hit != capsule)
+            if (hit != null && !IsOwnCollider(hit))
             {
                 return false;
             }
@@ -414,9 +531,166 @@ public void SetCrouch(bool value)
         return true;
     }
 
+    private void UpdateCrouchCollider(float deltaTime)
+    {
+        float targetHeight = isCrouching ? crouchingHeight : standingHeight;
+        capsule.height = Mathf.Lerp(capsule.height, targetHeight, 1f - Mathf.Exp(-crouchSmoothSpeed * deltaTime));
+        capsule.center = Vector3.up * (capsule.height * 0.5f);
+    }
+
+    private void UpdateCameraPosition(float deltaTime)
+    {
+        if (cameraTransform == null || !cameraTransform.IsChildOf(transform))
+        {
+            return;
+        }
+
+        if (playerCamera != null)
+        {
+            playerCamera.nearClipPlane = Mathf.Min(playerCamera.nearClipPlane, safeNearClipPlane);
+        }
+
+        float targetHeight = isCrouching ? crouchingCameraHeight : standingCameraHeight;
+        currentCameraHeight = Mathf.Lerp(currentCameraHeight, targetHeight, 1f - Mathf.Exp(-crouchSmoothSpeed * deltaTime));
+
+        Vector3 desiredLocalPosition = cameraBaseLocalPosition;
+        desiredLocalPosition.y = currentCameraHeight;
+
+        Vector3 desiredWorldPosition = transform.TransformPoint(desiredLocalPosition);
+        cameraTransform.position = preventCameraClipping
+            ? ResolveCameraCollision(desiredLocalPosition, desiredWorldPosition)
+            : desiredWorldPosition;
+    }
+
+    private Vector3 ResolveCameraCollision(Vector3 desiredLocalPosition, Vector3 desiredWorldPosition)
+    {
+        float radius = Mathf.Clamp(cameraCollisionRadius, 0.01f, Mathf.Max(0.01f, bodyRadius - cameraSkinWidth));
+        Vector3 pivotWorldPosition = transform.TransformPoint(new Vector3(0f, desiredLocalPosition.y, 0f));
+        Vector3 pivotToCamera = desiredWorldPosition - pivotWorldPosition;
+        float distance = pivotToCamera.magnitude;
+        Vector3 resolvedPosition = desiredWorldPosition;
+
+        if (distance > 0.0001f)
+        {
+            Vector3 direction = pivotToCamera / distance;
+            int hitCount = Physics.SphereCastNonAlloc(
+                pivotWorldPosition,
+                radius,
+                direction,
+                cameraCastHits,
+                distance + cameraSkinWidth,
+                cameraCollisionLayers,
+                QueryTriggerInteraction.Ignore);
+
+            float closestDistance = float.PositiveInfinity;
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit hit = cameraCastHits[i];
+                if (hit.collider == null || IsOwnCollider(hit.collider))
+                {
+                    continue;
+                }
+
+                if (hit.distance < closestDistance)
+                {
+                    closestDistance = hit.distance;
+                }
+            }
+
+            if (closestDistance < float.PositiveInfinity)
+            {
+                resolvedPosition = pivotWorldPosition + direction * Mathf.Max(0f, closestDistance - cameraSkinWidth);
+            }
+        }
+
+        for (int iteration = 0; iteration < 2; iteration++)
+        {
+            int overlapCount = Physics.OverlapSphereNonAlloc(
+                resolvedPosition,
+                radius,
+                cameraOverlapHits,
+                cameraCollisionLayers,
+                QueryTriggerInteraction.Ignore);
+
+            bool pushed = false;
+            for (int i = 0; i < overlapCount; i++)
+            {
+                Collider hit = cameraOverlapHits[i];
+                if (hit == null || IsOwnCollider(hit))
+                {
+                    continue;
+                }
+
+                Vector3 closestPoint = hit.ClosestPoint(resolvedPosition);
+                Vector3 pushDirection = resolvedPosition - closestPoint;
+                float pushDistance = radius - pushDirection.magnitude;
+
+                if (pushDirection.sqrMagnitude < 0.000001f)
+                {
+                    pushDirection = (resolvedPosition - hit.bounds.center).normalized;
+                    if (pushDirection.sqrMagnitude < 0.000001f)
+                    {
+                        pushDirection = transform.forward;
+                    }
+                }
+                else
+                {
+                    pushDirection.Normalize();
+                }
+
+                if (pushDistance > 0f)
+                {
+                    resolvedPosition += pushDirection * (pushDistance + cameraSkinWidth);
+                    pushed = true;
+                }
+            }
+
+            if (!pushed)
+            {
+                break;
+            }
+        }
+
+        return resolvedPosition;
+    }
+
+    private bool CanStandUp()
+    {
+        if (!isCrouching)
+        {
+            return true;
+        }
+
+        float radius = Mathf.Max(0.01f, bodyRadius - collisionSkinWidth);
+        Vector3 bottom = rb.position + Vector3.up * radius;
+        Vector3 top = rb.position + Vector3.up * (standingHeight - radius);
+        int hitCount = Physics.OverlapCapsuleNonAlloc(bottom, top, radius, standCheckHits, groundLayers, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = standCheckHits[i];
+            if (hit != null && !IsOwnCollider(hit))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsGrounded()
+    {
+        return groundedLastFixedUpdate || ProbeGround(rb.position, groundSnapDistance + 0.05f, out _);
+    }
+
     private bool IsWalkable(Vector3 normal)
     {
         return Vector3.Angle(normal, Vector3.up) <= maxWalkableSlope;
+    }
+
+    private bool IsOwnCollider(Collider other)
+    {
+        return other == capsule || other.transform == transform || other.transform.IsChildOf(transform);
     }
 
     private Vector3 Flatten(Vector3 value)
@@ -451,57 +725,12 @@ public void SetCrouch(bool value)
     }
 
     private bool IsRunning()
-{
-    return runPressed
-        && IsMoving()
-        && !isCrouching
-        && !runExhausted
-        && currentRunStamina > 0f;
-}
-
-    private bool IsGrounded()
     {
-        return CastPlayer(rb.position + Vector3.up * collisionSkinWidth, Vector3.down, groundSnapDistance + collisionSkinWidth + 0.05f, out RaycastHit hit)
-            && IsWalkable(hit.normal);
-    }
-
-    private bool CanStandUp()
-    {
-        if (!isCrouching)
-        {
-            return true;
-        }
-
-        float radius = bodyRadius * 0.95f;
-        Vector3 bottom = transform.position + Vector3.up * radius;
-        Vector3 top = transform.position + Vector3.up * (standingHeight - radius);
-        int hitCount = Physics.OverlapCapsuleNonAlloc(bottom, top, radius, standCheckHits, groundLayers, QueryTriggerInteraction.Ignore);
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            Collider hit = standCheckHits[i];
-            if (hit != null && hit != capsule)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private void UpdateCrouch(float deltaTime)
-    {
-        float targetHeight = isCrouching ? crouchingHeight : standingHeight;
-        capsule.height = Mathf.Lerp(capsule.height, targetHeight, crouchSmoothSpeed * deltaTime);
-        capsule.center = Vector3.up * (capsule.height * 0.5f);
-
-        if (cameraTransform != null && cameraTransform.IsChildOf(transform))
-        {
-            float targetCameraHeight = isCrouching ? crouchingCameraHeight : standingCameraHeight;
-            Vector3 localPosition = cameraTransform.localPosition;
-            localPosition.y = Mathf.Lerp(localPosition.y, targetCameraHeight, crouchSmoothSpeed * deltaTime);
-            cameraTransform.localPosition = localPosition;
-        }
+        return runPressed
+            && IsMoving()
+            && !isCrouching
+            && !runExhausted
+            && currentRunStamina > 0f;
     }
 
     private void UpdateFootsteps()
@@ -523,90 +752,75 @@ public void SetCrouch(bool value)
     }
 
     private void PlayFootstep()
-{
-    AudioClip clip = null;
-
-    if (footstepClips != null && footstepClips.Length > 0)
     {
-        clip = footstepClips[
-            Random.Range(0, footstepClips.Length)
-        ];
-    }
-    else
-    {
-        clip = generatedFootstepClip;
-    }
+        AudioClip clip = null;
 
-    if (clip == null)
-    {
-        return;
-    }
-
-    float pitch = Random.Range(
-        footstepPitchRange.x,
-        footstepPitchRange.y
-    );
-
-    footstepSource.pitch = IsRunning()
-        ? pitch * 1.05f
-        : pitch;
-
-    footstepSource.PlayOneShot(
-        clip,
-        footstepVolume
-    );
-
-    if (torchSway != null)
-    {
-        torchSway.OnFootstep(IsRunning());
-    }
-}
-    private void UpdateRunStamina()
-{
-    if (IsRunning())
-    {
-        currentRunStamina -= runStaminaDrainRate * Time.deltaTime;
-
-        rechargeTimer = rechargeDelay;
-
-        if (currentRunStamina <= 0f)
+        if (footstepClips != null && footstepClips.Length > 0)
         {
-            currentRunStamina = 0f;
-
-            runPressed = false;
-
-            runExhausted = true;
-        }
-    }
-    else
-    {
-        if (rechargeTimer > 0f)
-        {
-            rechargeTimer -= Time.deltaTime;
+            clip = footstepClips[Random.Range(0, footstepClips.Length)];
         }
         else
         {
-            currentRunStamina += runStaminaRechargeRate * Time.deltaTime;
+            clip = generatedFootstepClip;
+        }
 
-            if (currentRunStamina >= maxRunStamina)
-            {
-                currentRunStamina = maxRunStamina;
+        if (clip == null)
+        {
+            return;
+        }
 
-                runExhausted = false;
-            }
+        float pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
+        footstepSource.pitch = IsRunning() ? pitch * 1.05f : pitch;
+        footstepSource.PlayOneShot(clip, footstepVolume);
+
+        if (torchSway != null)
+        {
+            torchSway.OnFootstep(IsRunning());
         }
     }
 
-    UpdateRunCooldownUI();
-}
-    private void UpdateRunCooldownUI()
-{
-    if (runCooldownFill != null)
+    private void UpdateRunStamina()
     {
-        runCooldownFill.fillAmount =
-            currentRunStamina / maxRunStamina;
+        if (IsRunning())
+        {
+            currentRunStamina -= runStaminaDrainRate * Time.deltaTime;
+            rechargeTimer = rechargeDelay;
+
+            if (currentRunStamina <= 0f)
+            {
+                currentRunStamina = 0f;
+                runPressed = false;
+                runExhausted = true;
+            }
+        }
+        else
+        {
+            if (rechargeTimer > 0f)
+            {
+                rechargeTimer -= Time.deltaTime;
+            }
+            else
+            {
+                currentRunStamina += runStaminaRechargeRate * Time.deltaTime;
+
+                if (currentRunStamina >= maxRunStamina)
+                {
+                    currentRunStamina = maxRunStamina;
+                    runExhausted = false;
+                }
+            }
+        }
+
+        UpdateRunCooldownUI();
     }
-}
+
+    private void UpdateRunCooldownUI()
+    {
+        if (runCooldownFill != null)
+        {
+            runCooldownFill.fillAmount = currentRunStamina / maxRunStamina;
+        }
+    }
 
     private AudioClip CreateFootstepClip()
     {
@@ -629,18 +843,19 @@ public void SetCrouch(bool value)
         clip.SetData(samples, 0);
         return clip;
     }
+
     public bool GetIsMoving()
-{
-    return IsMoving();
-}
+    {
+        return IsMoving();
+    }
 
-public bool GetIsRunning()
-{
-    return IsRunning();
-}
+    public bool GetIsRunning()
+    {
+        return IsRunning();
+    }
 
-public bool GetIsCrouching()
-{
-    return isCrouching;
-}
+    public bool GetIsCrouching()
+    {
+        return isCrouching;
+    }
 }
