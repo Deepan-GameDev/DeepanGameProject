@@ -500,4 +500,14 @@ public class ZombieAI : MonoBehaviour
             gameOverManager.GameOver();
         }
     }
+    public void WakeUpZombie()
+{
+    Debug.Log("WakeUpZombie Called");
+    if (hasWokenUp)
+        return;
+
+    hasWokenUp = true;
+
+    StartCoroutine(WakeUpRoutine());
+}
 }
