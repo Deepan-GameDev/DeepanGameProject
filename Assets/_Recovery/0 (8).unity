@@ -111100,10 +111100,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 395955581246508946, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
-      propertyPath: flashlightController
-      value: 
-      objectReference: {fileID: 1958503473}
     - target: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
       propertyPath: m_Name
       value: Battery Pickup (4)
@@ -143082,10 +143078,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 395955581246508946, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
-      propertyPath: flashlightController
-      value: 
-      objectReference: {fileID: 1958503473}
     - target: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
       propertyPath: m_Name
       value: Battery Pickup (2)
@@ -200552,10 +200544,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 395955581246508946, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
-      propertyPath: flashlightController
-      value: 
-      objectReference: {fileID: 1958503473}
     - target: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
       propertyPath: m_Name
       value: Battery Pickup (1)
@@ -253950,7 +253938,7 @@ Light:
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0.2011463, g: 0.2268743, b: 0.2754717, a: 0.79607844}
-  m_Intensity: 0
+  m_Intensity: 18.19
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -330084,10 +330072,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 395955581246508946, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
-      propertyPath: flashlightController
-      value: 
-      objectReference: {fileID: 1958503473}
     - target: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
       propertyPath: m_Name
       value: Battery Pickup (3)
