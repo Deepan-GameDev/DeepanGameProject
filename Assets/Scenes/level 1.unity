@@ -268353,7 +268353,7 @@ GameObject:
   - component: {fileID: 1958503475}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -268378,12 +268378,12 @@ MonoBehaviour:
   runStaminaRechargeRate: 1
   rechargeDelay: 2
   runCooldownFill: {fileID: 208439731}
-  standingHeight: 1.4
+  standingHeight: 1.6
   crouchingHeight: 1.15
   bodyRadius: 0.3
   crouchSmoothSpeed: 10
   cameraTransform: {fileID: 1202231364}
-  standingCameraHeight: 0.6
+  standingCameraHeight: 0.8
   crouchingCameraHeight: 0.95
   groundLayers:
     serializedVersion: 2
@@ -353004,6 +353004,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6405412477789392791}
+    - targetCorrespondingSourceObject: {fileID: 2123425089076568076, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6405412477789392796}
   m_SourcePrefab: {fileID: 100100000, guid: ad2943a4beb796b4589a94f3b7348f55, type: 3}
 --- !u!218 &1383745954686368594
 Terrain:
@@ -358943,6 +358946,21 @@ MonoBehaviour:
   playerTorchModel: {fileID: 1681928983}
   pickupSound: {fileID: 8300000, guid: 3e2326abe0779f24c911734dd5f3c27a, type: 3}
   objectiveManager: {fileID: 259759414}
+--- !u!114 &6405412477789392796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6405412477789392790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cffbc9939ed9ae4990f724f15274048, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupGlow
+  glowDistance: 2
+  glowColor: {r: 1, g: 1, b: 1, a: 1}
+  glowIntensity: 2
 --- !u!1001 &7160097241870873541
 PrefabInstance:
   m_ObjectHideFlags: 0
