@@ -10,6 +10,7 @@ public class BoatEscape : MonoBehaviour, IInteractable
     public GameObject gameplayUI;
     public Camera playerCamera;
     public Camera escapeCamera;
+    public PlayerInventory playerInventory;
 
     [Header("Boat Audio")]
     public AudioSource boatAudioSource;
@@ -29,14 +30,25 @@ public class BoatEscape : MonoBehaviour, IInteractable
     private bool isMoving;
 
     public void Interact()
+{
+    if (hasEscaped)
+        return;
+
+    if (playerInventory == null || !playerInventory.HasBoatKey())
     {
-        if (hasEscaped)
-            return;
+        if (gameMessageUI != null)
+        {
+            gameMessageUI.ShowMessage("BOAT KEY REQUIRED");
+        }
 
-        hasEscaped = true;
-
-        StartCoroutine(StartEscape());
+        return;
     }
+
+    hasEscaped = true;
+
+
+    StartCoroutine(StartEscape());
+}
 
     private IEnumerator StartEscape()
     {

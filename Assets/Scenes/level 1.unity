@@ -270981,6 +270981,8 @@ MonoBehaviour:
   collisionSkinWidth: 0.03
   stepHeight: 0.45
   groundSnapDistance: 0.25
+  maxWalkableSlope: 55
+  stepSearchDistance: 0.08
   footstepClips:
   - {fileID: 8300000, guid: 015f3624a46d54646a3867281bf42125, type: 3}
   - {fileID: 8300000, guid: 16ee55c1b39724c4f8441b433d791f4e, type: 3}
@@ -361793,6 +361795,7 @@ MonoBehaviour:
   gameplayUI: {fileID: 1407245127}
   playerCamera: {fileID: 1202231363}
   escapeCamera: {fileID: 901823472}
+  playerInventory: {fileID: 1958503475}
   boatAudioSource: {fileID: 5377741746894911745}
   boatStartSound: {fileID: 8300000, guid: 344477e1d5d19bb4ab0c29647b1071a3, type: 3}
   escapeCanvasGroup: {fileID: 1435027283}
