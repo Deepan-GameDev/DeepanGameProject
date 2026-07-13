@@ -1,43 +1,80 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(Collider))]
 public class LadderTrigger : MonoBehaviour
 {
     public GameObject climbButton;
+    public Button climbUIButton;
     public LadderClimber ladder;
 
     private bool playerInside;
 
+    private void Awake()
+    {
+        Collider triggerCollider = GetComponent<Collider>();
+        triggerCollider.isTrigger = true;
+
+        if (climbUIButton == null && climbButton != null)
+        {
+            climbUIButton = climbButton.GetComponent<Button>();
+        }
+
+        if (climbUIButton != null)
+        {
+            climbUIButton.onClick.RemoveListener(OnClimbButtonPressed);
+            climbUIButton.onClick.AddListener(OnClimbButtonPressed);
+        }
+    }
+
     private void Start()
     {
-        climbButton.SetActive(false);
+        SetButtonVisible(false);
+    }
+
+    private void Update()
+    {
+        SetButtonVisible(playerInside && ladder != null && !ladder.IsClimbing);
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player"))
+        {
             return;
+        }
 
         playerInside = true;
-        climbButton.SetActive(true);
+        SetButtonVisible(ladder != null && !ladder.IsClimbing);
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player"))
+        {
             return;
+        }
 
         playerInside = false;
-        climbButton.SetActive(false);
+        SetButtonVisible(false);
     }
 
     public void OnClimbButtonPressed()
     {
-        if (!playerInside)
+        if (!playerInside || ladder == null || ladder.IsClimbing)
+        {
             return;
+        }
 
-        climbButton.SetActive(false);
-
+        SetButtonVisible(false);
         ladder.StartClimb();
+    }
+
+    private void SetButtonVisible(bool visible)
+    {
+        if (climbButton != null)
+        {
+            climbButton.SetActive(visible);
+        }
     }
 }

@@ -75,6 +75,11 @@ public class Player : MonoBehaviour
     private float currentRunStamina;
     private float rechargeTimer;
     private bool runExhausted;
+    private bool inputLocked;
+    private bool externalMovementActive;
+    private bool hasExternalPose;
+    private Vector3 externalMovePosition;
+    private Quaternion externalMoveRotation;
 
     private readonly Collider[] standCheckHits = new Collider[8];
     private readonly RaycastHit[] movementHits = new RaycastHit[12];
@@ -86,11 +91,22 @@ public class Player : MonoBehaviour
 
     public void AddYawInput(float yawDegrees)
     {
+        if (inputLocked)
+        {
+            return;
+        }
+
         pendingYaw += yawDegrees;
     }
 
     public void SetMoveInput(Vector2 input)
     {
+        if (inputLocked)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
         moveInput = input.sqrMagnitude < moveInputDeadZone * moveInputDeadZone
             ? Vector2.zero
             : Vector2.ClampMagnitude(input, 1f);
@@ -98,6 +114,11 @@ public class Player : MonoBehaviour
 
     public void ToggleRun()
     {
+        if (inputLocked)
+        {
+            return;
+        }
+
         if (runExhausted || currentRunStamina <= 0f)
         {
             return;
@@ -108,7 +129,84 @@ public class Player : MonoBehaviour
 
     public void SetCrouch(bool value)
     {
+        if (inputLocked)
+        {
+            return;
+        }
+
         crouchPressed = value;
+    }
+
+    private void SetInputLocked(bool locked)
+    {
+        inputLocked = locked;
+
+        if (inputLocked)
+        {
+            moveInput = Vector2.zero;
+            pendingYaw = 0f;
+            runPressed = false;
+            crouchPressed = false;
+        }
+    }
+
+    public bool GetInputLocked()
+    {
+        return inputLocked;
+    }
+
+    public CapsuleCollider GetBodyCollider()
+    {
+        return capsule;
+    }
+
+    public void BeginExternalMovement()
+    {
+        externalMovementActive = true;
+        hasExternalPose = true;
+        externalMovePosition = rb.position;
+        externalMoveRotation = playerRotation;
+
+        SetInputLocked(true);
+        isCrouching = false;
+        verticalVelocity = 0f;
+
+        if (rb != null)
+        {
+            rb.angularVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
+            rb.WakeUp();
+        }
+    }
+
+    public void SetExternalMovementPose(Vector3 position, Quaternion rotation)
+    {
+        if (!externalMovementActive)
+        {
+            return;
+        }
+
+        playerRotation = Quaternion.Euler(0f, rotation.eulerAngles.y, 0f);
+        externalMovePosition = position;
+        externalMoveRotation = playerRotation;
+        hasExternalPose = true;
+    }
+
+    public void EndExternalMovement()
+    {
+        externalMovementActive = false;
+        hasExternalPose = false;
+        verticalVelocity = 0f;
+        pendingYaw = 0f;
+        moveInput = Vector2.zero;
+        SetInputLocked(false);
+
+        if (rb != null)
+        {
+            rb.angularVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
+            rb.WakeUp();
+        }
     }
 
     private void Awake()
@@ -164,7 +262,7 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        isCrouching = crouchPressed || !CanStandUp();
+        isCrouching = externalMovementActive ? false : crouchPressed || !CanStandUp();
         UpdateRunStamina();
         UpdateFootsteps();
     }
@@ -172,6 +270,27 @@ public class Player : MonoBehaviour
     private void FixedUpdate()
     {
         UpdateCrouchCollider(Time.fixedDeltaTime);
+
+        if (externalMovementActive)
+        {
+            pendingYaw = 0f;
+            verticalVelocity = 0f;
+            groundedLastFixedUpdate = false;
+            rb.angularVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
+
+            if (hasExternalPose)
+            {
+                rb.MoveRotation(externalMoveRotation);
+                rb.MovePosition(externalMovePosition);
+            }
+            else
+            {
+                rb.MoveRotation(playerRotation);
+            }
+
+            return;
+        }
 
         if (Mathf.Abs(pendingYaw) > 0.001f)
         {

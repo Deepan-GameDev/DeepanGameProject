@@ -15,6 +15,17 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 
     private float pitch = 0f;
     private int activePointerId = int.MinValue;
+    private bool lookLocked;
+
+    public void SetLookLocked(bool locked)
+    {
+        lookLocked = locked;
+
+        if (lookLocked)
+        {
+            activePointerId = int.MinValue;
+        }
+    }
 
     void Start()
     {
@@ -31,6 +42,11 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (lookLocked)
+        {
+            return;
+        }
+
         activePointerId = eventData.pointerId;
     }
 
@@ -44,7 +60,7 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (eventData.pointerId != activePointerId || player == null || cameraTransform == null)
+        if (lookLocked || eventData.pointerId != activePointerId || player == null || cameraTransform == null)
         {
             return;
         }
