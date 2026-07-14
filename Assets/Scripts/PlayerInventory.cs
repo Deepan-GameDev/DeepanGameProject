@@ -3,12 +3,13 @@ using UnityEngine;
 public class PlayerInventory : MonoBehaviour
 {
     public bool hasKey = false;
+
     private bool hasBoatKey = false;
+    private bool hasLeverHandle = false;
 
     public void AddKey()
     {
         hasKey = true;
-
         Debug.Log("Key Picked Up");
     }
 
@@ -22,18 +23,37 @@ public class PlayerInventory : MonoBehaviour
         hasKey = false;
     }
 
+    // ---------------- BOAT KEY ----------------
+
     public void AddBoatKey()
-{
-    hasBoatKey = true;
-}
+    {
+        hasBoatKey = true;
+    }
 
-public bool HasBoatKey()
-{
-    return hasBoatKey;
-}
+    public bool HasBoatKey()
+    {
+        return hasBoatKey;
+    }
 
-public void UseBoatKey()
-{
-    hasBoatKey = false;
-}
+    public void UseBoatKey()
+    {
+        hasBoatKey = false;
+    }
+
+    // ---------------- LEVER HANDLE ----------------
+
+    public void AddLeverHandle()
+    {
+        hasLeverHandle = true;
+    }
+
+    public bool HasLeverHandle()
+    {
+        return hasLeverHandle;
+    }
+
+    public void UseLeverHandle()
+    {
+        hasLeverHandle = false;
+    }
 }

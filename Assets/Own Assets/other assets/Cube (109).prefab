@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7891415891480610797}
   - component: {fileID: 8099204379046663365}
   - component: {fileID: 6211421665921604278}
-  - component: {fileID: 3956681771564712085}
   - component: {fileID: 6538704499067689400}
   m_Layer: 0
   m_Name: Cube (109)
@@ -11662,14 +11661,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &3956681771564712085
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8428717273262735345}
-  m_Mesh: {fileID: 0}
 --- !u!64 &6538704499067689400
 MeshCollider:
   m_ObjectHideFlags: 0
