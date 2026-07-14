@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5808362399115769158}
   - component: {fileID: 605446994269755323}
   - component: {fileID: 6070917693356394865}
+  - component: {fileID: 5747320651485308621}
   m_Layer: 0
   m_Name: Point Light
   m_TagString: Untagged
@@ -40,7 +41,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1237898762512106281}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -127,6 +128,18 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!114 &5747320651485308621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237898762512106281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67e92109f2cc79d44bfa02d31398432e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerLight
 --- !u!1 &6431640633730123917
 GameObject:
   m_ObjectHideFlags: 0
