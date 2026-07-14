@@ -5,10 +5,10 @@ public class LeverController : MonoBehaviour, IInteractable
 {
     [Header("References")]
     public Transform leverHandle;
+    public Transform onPosition;
 
     [Header("Animation")]
-    public float rotateAngle = -90f;
-    public float rotateSpeed = 4f;
+    public float moveSpeed = 3f;
 
     [Header("Audio")]
     public AudioSource audioSource;
@@ -33,22 +33,22 @@ public class LeverController : MonoBehaviour, IInteractable
 
     private IEnumerator LeverRoutine()
     {
-        Quaternion startRotation = leverHandle.localRotation;
-        Quaternion targetRotation = Quaternion.Euler(rotateAngle, 0f, 0f);
+        Vector3 startPos = leverHandle.localPosition;
+        Vector3 targetPos = onPosition.localPosition;
 
         float t = 0f;
 
         while (t < 1f)
         {
-            t += Time.deltaTime * rotateSpeed;
+            t += Time.deltaTime * moveSpeed;
 
-            leverHandle.localRotation =
-                Quaternion.Slerp(startRotation, targetRotation, t);
+            leverHandle.localPosition =
+                Vector3.Lerp(startPos, targetPos, t);
 
             yield return null;
         }
 
-        leverHandle.localRotation = targetRotation;
+        leverHandle.localPosition = targetPos;
 
         if (audioSource != null && leverSound != null)
         {
