@@ -54,6 +54,7 @@ public class Player : MonoBehaviour
     private const int CollisionIterations = 5;
     private const float Gravity = -28f;
     private const float TerminalFallSpeed = -35f;
+    private const float HeightSnapEpsilon = 0.0005f;
 
     private Rigidbody rb;
     private CapsuleCollider capsule;
@@ -242,7 +243,9 @@ public class Player : MonoBehaviour
         if (cameraTransform != null)
         {
             cameraBaseLocalPosition = cameraTransform.localPosition;
-            currentCameraHeight = cameraBaseLocalPosition.y;
+            cameraBaseLocalPosition.y = standingCameraHeight;
+            currentCameraHeight = standingCameraHeight;
+            cameraTransform.localPosition = cameraBaseLocalPosition;
             playerCamera = cameraTransform.GetComponent<Camera>();
 
             if (playerCamera != null)
@@ -654,6 +657,11 @@ public class Player : MonoBehaviour
     {
         float targetHeight = isCrouching ? crouchingHeight : standingHeight;
         capsule.height = Mathf.Lerp(capsule.height, targetHeight, 1f - Mathf.Exp(-crouchSmoothSpeed * deltaTime));
+        if (Mathf.Abs(capsule.height - targetHeight) <= HeightSnapEpsilon)
+        {
+            capsule.height = targetHeight;
+        }
+
         capsule.center = Vector3.up * (capsule.height * 0.5f);
     }
 
@@ -671,6 +679,10 @@ public class Player : MonoBehaviour
 
         float targetHeight = isCrouching ? crouchingCameraHeight : standingCameraHeight;
         currentCameraHeight = Mathf.Lerp(currentCameraHeight, targetHeight, 1f - Mathf.Exp(-crouchSmoothSpeed * deltaTime));
+        if (Mathf.Abs(currentCameraHeight - targetHeight) <= HeightSnapEpsilon)
+        {
+            currentCameraHeight = targetHeight;
+        }
 
         Vector3 desiredLocalPosition = cameraBaseLocalPosition;
         desiredLocalPosition.y = currentCameraHeight;

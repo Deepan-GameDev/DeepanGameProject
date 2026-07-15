@@ -40,9 +40,14 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private float chaseAcceleration = 5.5f;
     [SerializeField] private float killDistance = 1f;
 
+    [Header("Attack")]
+    [SerializeField] private AudioSource attackAudioSource;
+    [SerializeField] private AudioClip biteClip;
+
     [Header("Movement Animation")]
     [SerializeField] private float turnSpeed = 240f;
     [SerializeField] private float movingAnimationThreshold = 0.08f;
+
 
     private NavMeshAgent agent;
     private ZombieState state;
@@ -176,7 +181,7 @@ public class ZombieAI : MonoBehaviour
 
         Vector3 toPlayer = player.position - transform.position;
         toPlayer.y = 0f;
-        if (toPlayer.sqrMagnitude <= killDistance * killDistance) KillPlayer();
+        if (toPlayer.sqrMagnitude <= killDistance * killDistance) StartCoroutine(AttackPlayer());
     }
 
     private void ConfigureAgent(float speed, float acceleration, float stoppingDistance)
@@ -245,6 +250,69 @@ public class ZombieAI : MonoBehaviour
         state = ZombieState.Dead;
         StopAgent(true);
         SetAnimation(false, false, false, 0f);
-        if (gameOverManager != null) gameOverManager.GameOver();
+        if (gameOverManager != null) StartCoroutine(KillRoutine());
     }
+
+    private IEnumerator KillRoutine()
+{
+    yield return new WaitForSeconds(0.2f);
+
+    GameManager.Instance.PlayerDied();
+
+    playerDead = false;
+    hasScreamed = false;
+
+    state = ZombieState.Patrol;
+
+    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
+
+    GoToPatrolPoint();
+}
+
+    private IEnumerator AttackPlayer()
+{
+    playerDead = true;
+
+    // Disable player movement
+    player.GetComponent<Player>().enabled = false;
+
+    StopAgent(true);
+
+    // Play attack animation
+    zombieAnimator.SetTrigger("Attack");
+
+    // Wait 1 second
+    yield return new WaitForSeconds(1f);
+
+    // Play bite sound
+    if (attackAudioSource != null && biteClip != null)
+    {
+        attackAudioSource.PlayOneShot(biteClip);
+    }
+
+    // Wait for the remaining animation time
+    yield return new WaitForSeconds(0.3f);
+
+    // Player loses a life / respawns
+    GameManager.Instance.PlayerDied();
+
+    playerDead = false;
+    hasScreamed = false;
+
+    state = ZombieState.Patrol;
+
+    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
+
+    GoToPatrolPoint();
+}
+
+    private IEnumerator PlayBiteSoundDelayed()
+{
+    yield return new WaitForSeconds(1f);
+
+    if (attackAudioSource != null && biteClip != null)
+    {
+        attackAudioSource.PlayOneShot(biteClip);
+    }
+}
 }
