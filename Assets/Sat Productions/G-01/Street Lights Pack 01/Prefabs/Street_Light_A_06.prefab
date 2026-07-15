@@ -151,7 +151,6 @@ GameObject:
   - component: {fileID: 1880366683808028813}
   - component: {fileID: 2086661435053366070}
   - component: {fileID: 6602788102390936578}
-  - component: {fileID: 4999718290461843562}
   m_Layer: 0
   m_Name: Street_Light_A_06
   m_TagString: Untagged
@@ -233,20 +232,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &4999718290461843562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6431640633730123917}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5bb0860c1a0f0344aec98eaff7e0722, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LightBlink
-  targetLight: {fileID: 605446994269755323}
-  blinkInterval: 0.2
 --- !u!1 &8939649270100877946
 GameObject:
   m_ObjectHideFlags: 0
