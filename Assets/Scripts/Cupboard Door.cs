@@ -14,6 +14,9 @@ public class CupboardDoor : MonoBehaviour, IInteractable
 
     private Quaternion closedRotation;
     private Quaternion openRotation;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
 
     private void Start()
     {
@@ -33,7 +36,12 @@ public class CupboardDoor : MonoBehaviour, IInteractable
     }
 
     public void Interact()
-    {
-        isOpen = !isOpen;
-    }
+{
+    isOpen = !isOpen;
+
+    if (isOpen)
+        audioSource.PlayOneShot(openSound);
+    else
+        audioSource.PlayOneShot(closeSound);
+}
 }
