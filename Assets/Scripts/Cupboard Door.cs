@@ -2,42 +2,33 @@ using UnityEngine;
 
 public class CupboardDoor : MonoBehaviour, IInteractable
 {
-    [Header("Door Pivots")]
-    public Transform leftDoorPivot;
-    public Transform rightDoorPivot;
+    [Header("Door Pivot")]
+    public Transform doorPivot;
 
     [Header("Settings")]
     public float openAngle = 90f;
     public float openSpeed = 3f;
+    public bool reverseDirection = false;
 
     private bool isOpen;
 
-    private Quaternion leftClosedRotation;
-    private Quaternion rightClosedRotation;
-
-    private Quaternion leftOpenRotation;
-    private Quaternion rightOpenRotation;
+    private Quaternion closedRotation;
+    private Quaternion openRotation;
 
     private void Start()
     {
-        leftClosedRotation = leftDoorPivot.localRotation;
-        rightClosedRotation = rightDoorPivot.localRotation;
+        closedRotation = doorPivot.localRotation;
 
-        // Reverse direction-na +/- maathunga
-        leftOpenRotation = leftClosedRotation * Quaternion.Euler(0, -openAngle, 0);
-        rightOpenRotation = rightClosedRotation * Quaternion.Euler(0, openAngle, 0);
+        float angle = reverseDirection ? -openAngle : openAngle;
+
+        openRotation = closedRotation * Quaternion.Euler(0, angle, 0);
     }
 
     private void Update()
     {
-        leftDoorPivot.localRotation = Quaternion.Slerp(
-            leftDoorPivot.localRotation,
-            isOpen ? leftOpenRotation : leftClosedRotation,
-            Time.deltaTime * openSpeed);
-
-        rightDoorPivot.localRotation = Quaternion.Slerp(
-            rightDoorPivot.localRotation,
-            isOpen ? rightOpenRotation : rightClosedRotation,
+        doorPivot.localRotation = Quaternion.Slerp(
+            doorPivot.localRotation,
+            isOpen ? openRotation : closedRotation,
             Time.deltaTime * openSpeed);
     }
 
