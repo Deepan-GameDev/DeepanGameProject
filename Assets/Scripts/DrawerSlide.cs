@@ -14,6 +14,11 @@ public class DrawerSlide : MonoBehaviour, IInteractable
 
     private bool isOpen;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
+
     private void Start()
     {
         closedPosition = transform.localPosition;
@@ -29,8 +34,16 @@ public class DrawerSlide : MonoBehaviour, IInteractable
     }
 
     public void Interact()
+{
+    isOpen = !isOpen;
+
+    if (audioSource != null)
     {
-        Debug.Log("Drawer Interacted");
-        isOpen = !isOpen;
+        if (isOpen && openSound != null)
+            audioSource.PlayOneShot(openSound);
+
+        if (!isOpen && closeSound != null)
+            audioSource.PlayOneShot(closeSound);
     }
+}
 }
