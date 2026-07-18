@@ -594,7 +594,10 @@ public class Player : MonoBehaviour
                     out Vector3 direction,
                     out float distance))
                 {
-                    recoveredPosition += direction * Mathf.Min(distance + collisionSkinWidth, bodyRadius);
+                    float recoveryDistance = IsWalkable(direction)
+                        ? distance
+                        : distance + collisionSkinWidth;
+                    recoveredPosition += direction * Mathf.Min(recoveryDistance, bodyRadius);
                     recovered = true;
                 }
             }
