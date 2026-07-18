@@ -12,9 +12,6 @@ public class DrawerSlide : MonoBehaviour, IInteractable
     [SerializeField] private AudioClip openSound;
     [SerializeField] private AudioClip closeSound;
 
-    [Header("Storage")]
-    [SerializeField] private GameObject hiddenItem;
-
     private Vector3 closedPosition;
     private Vector3 openPosition;
 
@@ -26,8 +23,6 @@ public class DrawerSlide : MonoBehaviour, IInteractable
         closedPosition = transform.localPosition;
         openPosition = closedPosition + slideDirection.normalized * slideDistance;
 
-        if (hiddenItem != null)
-            hiddenItem.SetActive(false);
     }
 
     private void Update()
@@ -49,11 +44,6 @@ public class DrawerSlide : MonoBehaviour, IInteractable
             audioSource.PlayOneShot(isOpen ? openSound : closeSound);
         }
 
-        if (isOpen && !itemRevealed && hiddenItem != null)
-        {
-            hiddenItem.SetActive(true);
-            itemRevealed = true;
-        }
     }
 
     public bool IsOpen()
