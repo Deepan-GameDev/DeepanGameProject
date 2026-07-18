@@ -261,6 +261,29 @@ public class Player : MonoBehaviour
 
         currentRunStamina = maxRunStamina;
         UpdateRunCooldownUI();
+        GroundPlayerAtStartup();
+    }
+
+    private void GroundPlayerAtStartup()
+    {
+        Physics.SyncTransforms();
+
+        Vector3 position = RecoverFromOverlaps(rb.position);
+        float startupGroundDistance = Mathf.Max(groundSnapDistance, stepHeight, standingHeight);
+
+        if (ProbeGround(position, startupGroundDistance, out _))
+        {
+            position = SnapToGround(position, startupGroundDistance, out bool snapped);
+
+            if (snapped)
+            {
+                rb.position = position;
+                transform.position = position;
+                verticalVelocity = -2f;
+                groundedLastFixedUpdate = true;
+                Physics.SyncTransforms();
+            }
+        }
     }
 
     private void Update()
