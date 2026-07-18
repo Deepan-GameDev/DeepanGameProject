@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public class LeverHandlePickup : MonoBehaviour, IInteractable
+public class LeverHandlePickup : MonoBehaviour, IPickup
 {
     public PlayerInventory playerInventory;
     public GameMessageUI gameMessageUI;
 
     public AudioClip pickupSound;
 
-    public void Interact()
+    public void Pickup()
     {
         if (playerInventory == null)
             return;

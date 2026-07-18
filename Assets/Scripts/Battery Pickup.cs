@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BatteryPickup : MonoBehaviour, IInteractable
+public class BatteryPickup : MonoBehaviour, IPickup
 {
     public FlashlightController flashlightController;
 
@@ -10,7 +10,7 @@ public class BatteryPickup : MonoBehaviour, IInteractable
     [Header("Audio")]
     public AudioClip pickupSound;
 
-    public void Interact()
+    public void Pickup()
     {
         DrawerSlide drawer = GetComponentInParent<DrawerSlide>();
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class TorchPickup : MonoBehaviour, IInteractable
+public class TorchPickup : MonoBehaviour, IPickup
 {
     public FlashlightController flashlightController;
     public GameObject flashlightButton;
@@ -8,7 +8,7 @@ public class TorchPickup : MonoBehaviour, IInteractable
     public AudioClip pickupSound;
     public ObjectiveManager objectiveManager;
 
-    public void Interact()
+    public void Pickup()
     {
         if (pickupSound != null)
         {

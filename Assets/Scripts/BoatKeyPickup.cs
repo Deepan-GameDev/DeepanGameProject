@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BoatKeyPickup : MonoBehaviour, IInteractable
+public class BoatKeyPickup : MonoBehaviour, IPickup
 {
     [Header("References")]
     public PlayerInventory playerInventory;
@@ -9,7 +9,7 @@ public class BoatKeyPickup : MonoBehaviour, IInteractable
     [Header("Audio")]
     public AudioClip pickupSound;
 
-    public void Interact()
+    public void Pickup()
     {
         if (playerInventory == null)
             return;

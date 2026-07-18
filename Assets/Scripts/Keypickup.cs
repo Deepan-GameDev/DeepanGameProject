@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public class KeyPickup : MonoBehaviour, IInteractable
+public class KeyPickup : MonoBehaviour, IPickup
 {
     public PlayerInventory playerInventory;
     public GameMessageUI gameMessageUI;
     public AudioClip pickupSound;
     public ObjectiveManager objectiveManager;
 
-    public void Interact()
+    public void Pickup()
     {
         DrawerSlide drawer = GetComponentInParent<DrawerSlide>();
 
