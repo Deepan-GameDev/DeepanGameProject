@@ -1543,6 +1543,37 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &6865543
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6865544}
+  m_Layer: 0
+  m_Name: ItemSpawnPoint (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6865544
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6865543}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 12.492997, y: 3.3595, z: 7.9122005}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 479790205}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &6957194
 Mesh:
   m_ObjectHideFlags: 0
@@ -41651,7 +41682,6 @@ Transform:
   - {fileID: 271371427}
   - {fileID: 2019044589}
   - {fileID: 1424779394}
-  - {fileID: 2012219737}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &297972439
@@ -74010,6 +74040,7 @@ Transform:
   - {fileID: 1309412965}
   - {fileID: 1898964662}
   - {fileID: 454797429}
+  - {fileID: 6865544}
   m_Father: {fileID: 1553590070}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &479790206
@@ -74030,6 +74061,7 @@ MonoBehaviour:
   audioSource: {fileID: 479790208}
   openSound: {fileID: 8300000, guid: ec5a7032ad1be7f41b6a4d8712c871c9, type: 3}
   closeSound: {fileID: 8300000, guid: ec5a7032ad1be7f41b6a4d8712c871c9, type: 3}
+  hiddenItem: {fileID: 1790334801}
 --- !u!64 &479790207
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -216001,6 +216033,11 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1336069063 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
+  m_PrefabInstance: {fileID: 1531686653902247437}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1337147759
 Mesh:
   m_ObjectHideFlags: 0
@@ -219171,7 +219208,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3581766091469362434, guid: 067bd64e586c4ff41bbc5d8a250fa3f6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 70.813
+      value: 71.417
       objectReference: {fileID: 0}
     - target: {fileID: 3581766091469362434, guid: 067bd64e586c4ff41bbc5d8a250fa3f6, type: 3}
       propertyPath: m_LocalRotation.w
@@ -230185,7 +230222,7 @@ Transform:
   m_GameObject: {fileID: 1424779393}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.243, y: 4.081, z: 10.479}
+  m_LocalPosition: {x: 12.243, y: 4.081, z: 10.94}
   m_LocalScale: {x: 0.77388257, y: 1.0058151, z: 0.77388257}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -230198,6 +230235,7 @@ Transform:
   - {fileID: 163004159}
   - {fileID: 477789025}
   - {fileID: 532926069}
+  - {fileID: 2012219737}
   m_Father: {fileID: 297400976}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &1426554068
@@ -279887,6 +279925,11 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1790334801 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1907516780719950230, guid: 138c32d2d5405e34da9d2abda4a38da5, type: 3}
+  m_PrefabInstance: {fileID: 1429375393}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1791620500
 Mesh:
   m_ObjectHideFlags: 0
@@ -287669,6 +287712,37 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1845103176
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1845103177}
+  m_Layer: 0
+  m_Name: ItemSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1845103177
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1845103176}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 12.492997, y: 3.189, z: 7.9122005}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2050047699}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1845270425
 GameObject:
   m_ObjectHideFlags: 0
@@ -315766,12 +315840,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2012219736}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.49861544, y: 0.49969482, z: 0.5003011, w: 0.50138456}
-  m_LocalPosition: {x: 13.262741, y: 3.1566963, z: 11.838}
-  m_LocalScale: {x: 1.3477896, y: 0.77388537, z: 0.7738827}
+  m_LocalRotation: {x: 0.49861547, y: 0.49969485, z: 0.5003012, w: 0.5013846}
+  m_LocalPosition: {x: 1.3176948, y: -0.9189596, z: 1.7560769}
+  m_LocalScale: {x: 1.3399987, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 297400976}
+  m_Father: {fileID: 1424779394}
   m_LocalEulerAnglesHint: {x: 0, y: 89.807, z: 89.876}
 --- !u!65 &2012219738
 BoxCollider:
@@ -365075,6 +365149,7 @@ Transform:
   - {fileID: 650297026}
   - {fileID: 1889532531}
   - {fileID: 1981161804}
+  - {fileID: 1845103177}
   m_Father: {fileID: 1319633105}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2050047700
@@ -365095,6 +365170,7 @@ MonoBehaviour:
   audioSource: {fileID: 2050047702}
   openSound: {fileID: 8300000, guid: ec5a7032ad1be7f41b6a4d8712c871c9, type: 3}
   closeSound: {fileID: 8300000, guid: ec5a7032ad1be7f41b6a4d8712c871c9, type: 3}
+  hiddenItem: {fileID: 1336069063}
 --- !u!64 &2050047701
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -365139,7 +365215,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 8
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0

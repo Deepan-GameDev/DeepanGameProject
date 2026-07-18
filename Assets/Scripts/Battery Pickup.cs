@@ -12,6 +12,10 @@ public class BatteryPickup : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        DrawerSlide drawer = GetComponentInParent<DrawerSlide>();
+
+if(drawer != null && !drawer.IsOpen())
+    return;
         if (flashlightController == null)
             return;
 

@@ -9,6 +9,10 @@ public class KeyPickup : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        DrawerSlide drawer = GetComponentInParent<DrawerSlide>();
+
+if(drawer != null && !drawer.IsOpen())
+    return;
         if (playerInventory == null)
             return;
 
