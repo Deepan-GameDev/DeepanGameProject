@@ -329,19 +329,21 @@ public class Player : MonoBehaviour
         rb.MoveRotation(playerRotation);
 
         Vector3 position = RecoverFromOverlaps(rb.position);
-        bool grounded = ProbeGround(position, groundSnapDistance + stepHeight, out RaycastHit groundHit);
-        groundedLastFixedUpdate = grounded;
+        bool groundedBeforeHorizontalMove = ProbeGround(position, groundSnapDistance + stepHeight, out _);
 
         float speed = GetCurrentSpeed();
         Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
         Vector3 horizontalVelocity = playerRotation * localMove * speed;
         Vector3 horizontalMove = horizontalVelocity * Time.fixedDeltaTime;
 
-        position = MoveHorizontal(position, horizontalMove, grounded);
+        position = MoveHorizontal(position, horizontalMove, groundedBeforeHorizontalMove);
+
+        bool grounded = ProbeGround(position, groundSnapDistance + stepHeight, out RaycastHit groundHit);
+        groundedLastFixedUpdate = grounded;
 
         if (grounded && verticalVelocity <= 0f)
         {
-            position = SnapToGround(position, Mathf.Max(groundSnapDistance, stepHeight), out bool snapped);
+            position = SnapToGround(position, Mathf.Max(groundSnapDistance, stepHeight), groundHit, out bool snapped);
             verticalVelocity = snapped ? -2f : 0f;
         }
         else
@@ -513,16 +515,69 @@ public class Player : MonoBehaviour
             return position;
         }
 
+        return SnapToGround(position, snapDistance, groundHit, out snapped);
+    }
+
+    private Vector3 SnapToGround(Vector3 position, float snapDistance, RaycastHit groundHit, out bool snapped)
+    {
+        snapped = false;
+
+        if (groundHit.collider == null || groundHit.distance > snapDistance + collisionSkinWidth || !IsWalkable(groundHit.normal))
+        {
+            return position;
+        }
+
         float downDistance = Mathf.Max(0f, groundHit.distance - collisionSkinWidth);
         Vector3 targetPosition = position + Vector3.down * downDistance;
 
-        if (!IsCapsuleClear(targetPosition))
+        if (HasBlockingOverlapAtGroundSnap(targetPosition))
         {
             return position;
         }
 
         snapped = true;
         return targetPosition;
+    }
+
+    private bool HasBlockingOverlapAtGroundSnap(Vector3 position)
+    {
+        GetCapsulePoints(position, out Vector3 bottom, out Vector3 top, out float radius);
+        int hitCount = Physics.OverlapCapsuleNonAlloc(
+            bottom,
+            top,
+            radius,
+            overlapHits,
+            groundLayers,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = overlapHits[i];
+            if (hit == null || IsOwnCollider(hit))
+            {
+                continue;
+            }
+
+            if (!Physics.ComputePenetration(
+                capsule,
+                position,
+                playerRotation,
+                hit,
+                hit.transform.position,
+                hit.transform.rotation,
+                out Vector3 direction,
+                out _))
+            {
+                continue;
+            }
+
+            if (!IsWalkable(direction))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool ProbeGround(Vector3 position, float distance, out RaycastHit bestHit)
