@@ -2,26 +2,28 @@ using UnityEngine;
 
 public class PlayerInventory : MonoBehaviour
 {
-    public bool hasKey = false;
+    [Header("Room Keys")]
+    public bool hasRoom1Key;
+    public bool hasRoom2Key;
+    public bool hasRoom3Key;
+    public bool hasRoom4Key;
+    public bool hasRoom5Key;
 
+    [Header("Other Items")]
     private bool hasBoatKey = false;
     private bool hasLeverHandle = false;
 
-    public void AddKey()
-    {
-        hasKey = true;
-        Debug.Log("Key Picked Up");
-    }
+    public void AddRoom1Key() => hasRoom1Key = true;
+    public void AddRoom2Key() => hasRoom2Key = true;
+    public void AddRoom3Key() => hasRoom3Key = true;
+    public void AddRoom4Key() => hasRoom4Key = true;
+    public void AddRoom5Key() => hasRoom5Key = true;
 
-    public bool HasKey()
-    {
-        return hasKey;
-    }
-
-    public void UseKey()
-    {
-        hasKey = false;
-    }
+    public bool HasRoom1Key() => hasRoom1Key;
+    public bool HasRoom2Key() => hasRoom2Key;
+    public bool HasRoom3Key() => hasRoom3Key;
+    public bool HasRoom4Key() => hasRoom4Key;
+    public bool HasRoom5Key() => hasRoom5Key;
 
     // ---------------- BOAT KEY ----------------
 
@@ -35,11 +37,6 @@ public class PlayerInventory : MonoBehaviour
         return hasBoatKey;
     }
 
-    public void UseBoatKey()
-    {
-        hasBoatKey = false;
-    }
-
     // ---------------- LEVER HANDLE ----------------
 
     public void AddLeverHandle()
@@ -47,13 +44,13 @@ public class PlayerInventory : MonoBehaviour
         hasLeverHandle = true;
     }
 
+    public void UseLeverHandle()
+{
+    hasLeverHandle = false;
+}
+
     public bool HasLeverHandle()
     {
         return hasLeverHandle;
-    }
-
-    public void UseLeverHandle()
-    {
-        hasLeverHandle = false;
     }
 }
