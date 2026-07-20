@@ -27,6 +27,9 @@ public class KeypadInteractionController : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+
+        if (GetComponent<NavKeypad.KeypadInteractionMobile>() == null)
+            gameObject.AddComponent<NavKeypad.KeypadInteractionMobile>();
     }
 
     private void LateUpdate()
@@ -135,5 +138,13 @@ public class KeypadInteractionController : MonoBehaviour
     public bool CanUseKeypad()
     {
         return inKeypadMode && keypadInputEnabled;
+    }
+
+    public Camera GetKeypadCamera()
+    {
+        if (playerCamera == null)
+            return null;
+
+        return playerCamera.GetComponent<Camera>();
     }
 }

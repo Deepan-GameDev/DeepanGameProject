@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace NavKeypad
 {
@@ -6,55 +7,69 @@ namespace NavKeypad
     {
         private Camera cam;
 
-        private void Awake()
-        {
-            cam = Camera.main;
-        }
-
         private void Update()
         {
+            KeypadInteractionController controller = KeypadInteractionController.Instance;
+            if (controller == null || !controller.CanUseKeypad())
+                return;
+
+            cam = controller.GetKeypadCamera();
             if (cam == null)
-                cam = Camera.main;
+                return;
 
 #if UNITY_ANDROID || UNITY_IOS
-            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+
+            if (Touchscreen.current != null)
             {
-                HandlePress(Input.GetTouch(0).position);
+                var touch = Touchscreen.current.primaryTouch;
+
+                if (touch.press.wasPressedThisFrame)
+                {
+                    HandlePress(touch.position.ReadValue());
+                }
             }
+
 #else
-            if (Input.GetMouseButtonDown(0))
+
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
-                HandlePress(Input.mousePosition);
+                HandlePress(Mouse.current.position.ReadValue());
             }
+
 #endif
         }
 
         private void HandlePress(Vector2 screenPos)
-{
-    if (KeypadInteractionController.Instance == null)
-        return;
-
-    if (!KeypadInteractionController.Instance.CanUseKeypad())
-        return;
-
-    Ray ray = cam.ScreenPointToRay(screenPos);
-
-    if (Physics.Raycast(ray, out RaycastHit hit, 10f))
-    {
-        KeypadButton button = hit.collider.GetComponent<KeypadButton>();
-
-        if (button == null)
-            button = hit.collider.GetComponentInParent<KeypadButton>();
-
-        if (button == null)
-            button = hit.collider.GetComponentInChildren<KeypadButton>();
-
-        if (button != null)
         {
-            button.PressButton();
+            Ray ray = cam.ScreenPointToRay(screenPos);
+
+            RaycastHit[] hits = Physics.RaycastAll(
+                ray,
+                10f,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Collide);
+
+            if (hits.Length == 0)
+                return;
+
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            foreach (RaycastHit hit in hits)
+            {
+                KeypadButton button = hit.collider.GetComponent<KeypadButton>();
+
+                if (button == null)
+                    button = hit.collider.GetComponentInParent<KeypadButton>();
+
+                if (button == null)
+                    button = hit.collider.GetComponentInChildren<KeypadButton>();
+
+                if (button != null)
+                {
+                    button.PressButton();
+                    return;
+                }
+            }
         }
     }
 }
-            }
-        }
-    
