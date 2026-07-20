@@ -6,7 +6,7 @@ namespace NavKeypad
     {
         private Camera cam;
 
-        private void Start()
+        private void Awake()
         {
             cam = Camera.main;
         }
@@ -16,43 +16,45 @@ namespace NavKeypad
             if (cam == null)
                 cam = Camera.main;
 
-#if UNITY_EDITOR || UNITY_STANDALONE
-
+#if UNITY_ANDROID || UNITY_IOS
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+            {
+                HandlePress(Input.GetTouch(0).position);
+            }
+#else
             if (Input.GetMouseButtonDown(0))
             {
-                PressButton(Input.mousePosition);
+                HandlePress(Input.mousePosition);
             }
-
-#endif
-
-#if UNITY_ANDROID || UNITY_IOS
-
-            if (Input.touchCount > 0)
-            {
-                Touch touch = Input.GetTouch(0);
-
-                if (touch.phase == TouchPhase.Began)
-                {
-                    PressButton(touch.position);
-                }
-            }
-
 #endif
         }
 
-        private void PressButton(Vector2 screenPosition)
+        private void HandlePress(Vector2 screenPos)
+{
+    if (KeypadInteractionController.Instance == null)
+        return;
+
+    if (!KeypadInteractionController.Instance.CanUseKeypad())
+        return;
+
+    Ray ray = cam.ScreenPointToRay(screenPos);
+
+    if (Physics.Raycast(ray, out RaycastHit hit, 10f))
+    {
+        KeypadButton button = hit.collider.GetComponent<KeypadButton>();
+
+        if (button == null)
+            button = hit.collider.GetComponentInParent<KeypadButton>();
+
+        if (button == null)
+            button = hit.collider.GetComponentInChildren<KeypadButton>();
+
+        if (button != null)
         {
-            Ray ray = cam.ScreenPointToRay(screenPosition);
-
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                KeypadButton button = hit.collider.GetComponent<KeypadButton>();
-
-                if (button != null)
-                {
-                    button.PressButton();
-                }
-            }
+            button.PressButton();
         }
     }
 }
+            }
+        }
+    
