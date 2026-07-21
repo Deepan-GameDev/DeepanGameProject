@@ -1,15 +1,18 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace NavKeypad
 {
     public class KeypadInteractionMobile : MonoBehaviour
     {
+        [SerializeField] private float raycastDistance = 25f;
+
         private Camera cam;
 
         private void Update()
         {
-            KeypadInteractionController controller = KeypadInteractionController.Instance;
+            global::KeypadInteractionController controller = global::KeypadInteractionController.Instance;
             if (controller == null || !controller.CanUseKeypad())
                 return;
 
@@ -17,25 +20,23 @@ namespace NavKeypad
             if (cam == null)
                 return;
 
-#if UNITY_ANDROID || UNITY_IOS
-
             if (Touchscreen.current != null)
             {
-                var touch = Touchscreen.current.primaryTouch;
-
-                if (touch.press.wasPressedThisFrame)
+                foreach (TouchControl touch in Touchscreen.current.touches)
                 {
-                    HandlePress(touch.position.ReadValue());
+                    if (touch.press.wasPressedThisFrame)
+                    {
+                        HandlePress(touch.position.ReadValue());
+                        return;
+                    }
                 }
             }
 
-#else
-
+#if UNITY_EDITOR || UNITY_STANDALONE
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
                 HandlePress(Mouse.current.position.ReadValue());
             }
-
 #endif
         }
 
@@ -45,7 +46,7 @@ namespace NavKeypad
 
             RaycastHit[] hits = Physics.RaycastAll(
                 ray,
-                10f,
+                raycastDistance,
                 Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Collide);
 

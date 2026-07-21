@@ -145,6 +145,18 @@ public class KeypadInteractionController : MonoBehaviour
         if (playerCamera == null)
             return null;
 
-        return playerCamera.GetComponent<Camera>();
+        Camera keypadCamera = playerCamera.GetComponent<Camera>();
+        if (keypadCamera != null)
+            return keypadCamera;
+
+        keypadCamera = playerCamera.GetComponentInChildren<Camera>();
+        if (keypadCamera != null)
+            return keypadCamera;
+
+        keypadCamera = playerCamera.GetComponentInParent<Camera>();
+        if (keypadCamera != null)
+            return keypadCamera;
+
+        return Camera.main;
     }
 }
