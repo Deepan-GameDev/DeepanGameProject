@@ -9,6 +9,8 @@ public class KeypadInteractionController : MonoBehaviour
     public Transform playerCamera;
     public Transform keypadCameraPoint;
     public Transform defaultView;
+    public MobileLook mobileLook;
+    public GameObject torchVisualObject;
 
     [Header("Settings")]
     public float moveSpeed = 8f;
@@ -23,6 +25,10 @@ public class KeypadInteractionController : MonoBehaviour
     private Transform originalCameraParent;
     private Vector3 originalCameraLocalPosition;
     private Quaternion originalCameraLocalRotation;
+    private bool torchVisualWasActive;
+    private bool torchVisualHiddenForKeypad;
+    private bool mobileLookWasEnabled;
+    private bool mobileLookLockedForKeypad;
 
     private void Awake()
     {
@@ -63,7 +69,7 @@ public class KeypadInteractionController : MonoBehaviour
 
     public void EnterKeypad()
     {
-        if (inKeypadMode)
+        if (inKeypadMode || returningToGameplay)
             return;
 
         if (player == null || playerCamera == null || keypadCameraPoint == null)
@@ -80,8 +86,10 @@ public class KeypadInteractionController : MonoBehaviour
         originalCameraLocalPosition = playerCamera.localPosition;
         originalCameraLocalRotation = playerCamera.localRotation;
 
+        DisableLookInput();
         playerCamera.SetParent(null, true);
         player.BeginExternalMovement();
+        HideTorchVisual();
         targetPosition = keypadCameraPoint.position;
         targetRotation = keypadCameraPoint.rotation;
         moving = true;
@@ -128,6 +136,93 @@ public class KeypadInteractionController : MonoBehaviour
 
         if (player != null)
             player.EndExternalMovement();
+
+        RestoreTorchVisual();
+        RestoreLookInput();
+    }
+
+    private void DisableLookInput()
+    {
+        ResolveMobileLook();
+
+        if (mobileLook == null || mobileLookLockedForKeypad)
+            return;
+
+        mobileLookWasEnabled = mobileLook.enabled;
+        mobileLook.SetLookLocked(true);
+        mobileLook.enabled = false;
+        mobileLookLockedForKeypad = true;
+    }
+
+    private void RestoreLookInput()
+    {
+        if (!mobileLookLockedForKeypad)
+            return;
+
+        if (mobileLook != null)
+        {
+            mobileLook.enabled = mobileLookWasEnabled;
+            mobileLook.SetLookLocked(false);
+        }
+
+        mobileLookLockedForKeypad = false;
+    }
+
+    private void HideTorchVisual()
+    {
+        ResolveTorchVisualObject();
+
+        if (torchVisualObject == null)
+            return;
+
+        torchVisualWasActive = torchVisualObject.activeSelf;
+        torchVisualHiddenForKeypad = true;
+        torchVisualObject.SetActive(false);
+    }
+
+    private void RestoreTorchVisual()
+    {
+        if (!torchVisualHiddenForKeypad)
+            return;
+
+        if (torchVisualObject != null)
+            torchVisualObject.SetActive(torchVisualWasActive);
+
+        torchVisualHiddenForKeypad = false;
+    }
+
+    private void ResolveTorchVisualObject()
+    {
+        if (torchVisualObject != null)
+            return;
+
+        if (player != null && player.torchSway != null)
+            torchVisualObject = player.torchSway.gameObject;
+    }
+
+    private void ResolveMobileLook()
+    {
+        if (mobileLook != null)
+            return;
+
+        MobileLook[] lookControllers = FindObjectsByType<MobileLook>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < lookControllers.Length; i++)
+        {
+            MobileLook lookController = lookControllers[i];
+
+            if (lookController == null)
+                continue;
+
+            bool matchesPlayer = player == null || lookController.player == player;
+            bool matchesCamera = playerCamera == null || lookController.cameraTransform == playerCamera;
+
+            if (matchesPlayer && matchesCamera)
+            {
+                mobileLook = lookController;
+                return;
+            }
+        }
     }
 
     public bool IsInKeypadMode()

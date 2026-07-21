@@ -43,11 +43,17 @@ public class LockerController : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (unlocked)
-            return;
-
         if (keypadInteractionController == null)
             keypadInteractionController = KeypadInteractionController.Instance;
+
+        if (keypadInteractionController != null && keypadInteractionController.IsInKeypadMode())
+        {
+            keypadInteractionController.ExitKeypad();
+            return;
+        }
+
+        if (unlocked)
+            return;
 
         if (keypadInteractionController != null)
             keypadInteractionController.EnterKeypad();

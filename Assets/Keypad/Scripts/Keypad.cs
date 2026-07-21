@@ -6,7 +6,7 @@ using UnityEngine.Events;
 
 namespace NavKeypad
 {
-    public class Keypad : MonoBehaviour
+    public class Keypad : MonoBehaviour, global::IInteractable
     {
         [Header("Events")]
         [SerializeField] private UnityEvent onAccessGranted;
@@ -47,6 +47,19 @@ namespace NavKeypad
         {
             ClearInput();
             panelMesh.material.SetVector("_EmissionColor", screenNormalColor * screenIntensity);
+        }
+
+        public void Interact()
+        {
+            global::KeypadInteractionController controller = global::KeypadInteractionController.Instance;
+
+            if (controller == null)
+                return;
+
+            if (controller.IsInKeypadMode())
+                controller.ExitKeypad();
+            else if (!accessWasGranted)
+                controller.EnterKeypad();
         }
 
 
