@@ -52,6 +52,7 @@ public class Player : MonoBehaviour
     public TorchSway torchSway;
 
     private const int CollisionIterations = 5;
+    private const int PenetrationRecoveryIterations = 8;
     private const float Gravity = -28f;
     private const float TerminalFallSpeed = -35f;
     private const float HeightSnapEpsilon = 0.0005f;
@@ -358,6 +359,7 @@ public class Player : MonoBehaviour
             }
         }
 
+        position = RecoverFromOverlaps(position);
         rb.MovePosition(position);
     }
 
@@ -618,7 +620,7 @@ public class Player : MonoBehaviour
     {
         Vector3 recoveredPosition = position;
 
-        for (int iteration = 0; iteration < 3; iteration++)
+        for (int iteration = 0; iteration < PenetrationRecoveryIterations; iteration++)
         {
             GetCapsulePoints(recoveredPosition, out Vector3 bottom, out Vector3 top, out float radius);
             int hitCount = Physics.OverlapCapsuleNonAlloc(
@@ -649,10 +651,16 @@ public class Player : MonoBehaviour
                     out Vector3 direction,
                     out float distance))
                 {
+                    if (distance <= 0f || direction.sqrMagnitude <= 0.000001f)
+                    {
+                        continue;
+                    }
+
                     float recoveryDistance = IsWalkable(direction)
                         ? distance
                         : distance + collisionSkinWidth;
-                    recoveredPosition += direction * Mathf.Min(recoveryDistance, bodyRadius);
+                    float maxRecoveryDistance = Mathf.Max(bodyRadius + collisionSkinWidth, collisionSkinWidth * 2f);
+                    recoveredPosition += direction.normalized * Mathf.Min(recoveryDistance, maxRecoveryDistance);
                     recovered = true;
                 }
             }
