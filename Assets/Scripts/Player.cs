@@ -56,6 +56,7 @@ public class Player : MonoBehaviour
     private const float Gravity = -28f;
     private const float TerminalFallSpeed = -35f;
     private const float HeightSnapEpsilon = 0.0005f;
+    private const float InitialOverlapCastEpsilon = 0.0001f;
 
     private Rigidbody rb;
     private CapsuleCollider capsule;
@@ -704,7 +705,7 @@ public class Player : MonoBehaviour
                 continue;
             }
 
-            if (hit.distance <= 0f && Vector3.Dot(hit.normal, direction) >= 0f)
+            if (hit.distance <= InitialOverlapCastEpsilon)
             {
                 continue;
             }
