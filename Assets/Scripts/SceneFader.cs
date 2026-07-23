@@ -1,29 +1,19 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
 
-public class SceneTransition : MonoBehaviour
+public class SceneFader : MonoBehaviour
 {
-    public static SceneTransition Instance;
-
-    [Header("Fade")]
     public CanvasGroup fadeGroup;
     public float fadeDuration = 0.8f;
 
-    private void Awake()
-    {
-        Instance = this;
-    }
-
     private void Start()
     {
-        // Scene starts with black screen
         fadeGroup.alpha = 1f;
         StartCoroutine(FadeIn());
     }
 
-    IEnumerator FadeIn()
+    public IEnumerator FadeIn()
     {
         fadeGroup.blocksRaycasts = true;
 
@@ -40,13 +30,7 @@ public class SceneTransition : MonoBehaviour
         fadeGroup.blocksRaycasts = false;
     }
 
-    public void LoadScene(string sceneName)
-    {
-        LoadingManager.sceneToLoad = sceneName;
-        StartCoroutine(FadeOut());
-    }
-
-    IEnumerator FadeOut()
+    public IEnumerator FadeOut()
     {
         fadeGroup.blocksRaycasts = true;
 
@@ -60,7 +44,5 @@ public class SceneTransition : MonoBehaviour
         }
 
         fadeGroup.alpha = 1f;
-
-        SceneManager.LoadScene("Loading Scene");
     }
 }
