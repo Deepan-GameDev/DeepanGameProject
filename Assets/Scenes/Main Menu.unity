@@ -483,6 +483,7 @@ RectTransform:
   - {fileID: 2059458742}
   - {fileID: 453013494}
   - {fileID: 20224335}
+  - {fileID: 1014219427}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -510,7 +511,7 @@ MonoBehaviour:
   menuGroup: {fileID: 2059458743}
   menuRect: {fileID: 2059458742}
   hiddenPosition: {x: -700, y: -490.5}
-  visiblePosition: {x: 358.7, y: -490.5}
+  visiblePosition: {x: 358.7, y: -649}
   voiceSource: {fileID: 493647210}
   newGameGroup: {fileID: 641287905}
   continueGroup: {fileID: 2120826458}
@@ -558,7 +559,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -202}
+  m_AnchoredPosition: {x: 968.4, y: -84}
   m_SizeDelta: {x: 389.8, y: 248.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &345013025
@@ -681,6 +682,7 @@ GameObject:
   - component: {fileID: 453013494}
   - component: {fileID: 453013496}
   - component: {fileID: 453013495}
+  - component: {fileID: 453013497}
   m_Layer: 5
   m_Name: FadePanel
   m_TagString: Untagged
@@ -745,6 +747,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 453013493}
   m_CullTransparentMesh: 1
+--- !u!225 &453013497
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 453013493}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &493647205
 GameObject:
   m_ObjectHideFlags: 0
@@ -1441,7 +1455,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -50}
+  m_AnchoredPosition: {x: 115.3, y: -89.1}
   m_SizeDelta: {x: 400, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &641287902
@@ -1487,7 +1501,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 641287903}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1014219428}
+        m_TargetAssemblyTypeName: SceneTransition, Assembly-CSharp
+        m_MethodName: LoadScene
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: level 1
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &641287903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1591,7 +1617,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -288.3}
+  m_AnchoredPosition: {x: 1406.8, y: -89}
   m_SizeDelta: {x: 399.9, y: 251.7}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &669156757
@@ -1782,6 +1808,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1014219426
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1014219427}
+  - component: {fileID: 1014219428}
+  m_Layer: 5
+  m_Name: SceneTransition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1014219427
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014219426}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 76364411}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1014219428
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014219426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb6887557f1caa4488e1cc789bfc38fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneTransition
+  fadeGroup: {fileID: 453013497}
+  fadeDuration: 0.8
 --- !u!1 &1118994137
 GameObject:
   m_ObjectHideFlags: 0
@@ -2323,7 +2399,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2059458742
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2397,7 +2473,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -125}
+  m_AnchoredPosition: {x: 519, y: -80.5}
   m_SizeDelta: {x: 455.3, y: 304.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2120826455
