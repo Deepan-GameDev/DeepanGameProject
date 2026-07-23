@@ -18,27 +18,28 @@ public class SceneTransition : MonoBehaviour
     }
 
     public void LoadScene(string sceneName)
+{
+    LoadingManager.sceneToLoad = sceneName;
+    StartCoroutine(FadeAndLoad());
+}
+
+    IEnumerator FadeAndLoad()
+{
+    fadeGroup.blocksRaycasts = true;
+
+    float t = 0;
+
+    while (t < fadeDuration)
     {
-        StartCoroutine(FadeAndLoad(sceneName));
+        t += Time.deltaTime;
+
+        fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
+
+        yield return null;
     }
 
-    IEnumerator FadeAndLoad(string sceneName)
-    {
-        fadeGroup.blocksRaycasts = true;
+    fadeGroup.alpha = 1;
 
-        float t = 0;
-
-        while (t < fadeDuration)
-        {
-            t += Time.deltaTime;
-
-            fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
-
-            yield return null;
-        }
-
-        fadeGroup.alpha = 1;
-
-        SceneManager.LoadScene(sceneName);
-    }
+    SceneManager.LoadScene("Loading Scene");
+}
 }
