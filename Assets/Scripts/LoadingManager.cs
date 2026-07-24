@@ -20,7 +20,7 @@ public class LoadingManager : MonoBehaviour
         }
 
         // Small cinematic delay
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(7f);
 
         operation.allowSceneActivation = true;
     }
