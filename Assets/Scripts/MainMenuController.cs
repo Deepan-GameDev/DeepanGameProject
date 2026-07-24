@@ -10,6 +10,10 @@ public class MainMenuController : MonoBehaviour
     public Image tapToContinue;
 
     public CanvasGroup logoGroup;
+    public RectTransform logoRect;
+
+[Header("Logo Position")]
+public Vector2 menuLogoPosition;
     public CanvasGroup tapGroup;
 
     public GameObject menuPanel;
@@ -91,17 +95,31 @@ public class MainMenuController : MonoBehaviour
 
         tapGroup.alpha = 0f;
 
-        // Fade Logo
-        while (logoGroup.alpha > 0)
-        {
-            logoGroup.alpha -= Time.deltaTime * 0.8f;
-            yield return null;
-        }
+        // Fade Out Logo
+while (logoGroup.alpha > 0)
+{
+    logoGroup.alpha -= Time.deltaTime * 1.2f;
+    yield return null;
+}
 
-        logoGroup.alpha = 0f;
+logoGroup.alpha = 0f;
 
-        // Small Pause
-        yield return new WaitForSeconds(0.3f);
+// Move logo above menu
+logoRect.anchoredPosition = menuLogoPosition;
+
+yield return new WaitForSeconds(0.15f);
+
+// Fade In Logo
+while (logoGroup.alpha < 1)
+{
+    logoGroup.alpha += Time.deltaTime * 1.2f;
+    yield return null;
+}
+
+logoGroup.alpha = 1f;
+
+// Small Pause
+yield return new WaitForSeconds(0.15f);
 
         // Show Menu Panel
         menuPanel.SetActive(true);

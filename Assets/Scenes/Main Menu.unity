@@ -596,6 +596,8 @@ MonoBehaviour:
   logo: {fileID: 1118994139}
   tapToContinue: {fileID: 2051933014}
   logoGroup: {fileID: 1118994141}
+  logoRect: {fileID: 1118994138}
+  menuLogoPosition: {x: -345.3, y: 530}
   tapGroup: {fileID: 2051933016}
   menuPanel: {fileID: 2059458741}
   menuGroup: {fileID: 2059458743}
