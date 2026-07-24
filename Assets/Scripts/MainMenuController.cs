@@ -209,4 +209,8 @@ public void ExitGame()
     Application.Quit();
 #endif
 }
+   public void OpenInstagram()
+{
+    Application.OpenURL("https://www.instagram.com/dbg_ames?igsh=MXhzaDVjZWIwaHJxMA==");
+}
 }

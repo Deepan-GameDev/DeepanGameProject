@@ -7,7 +7,10 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
     public Transform cameraTransform;
     public TorchSway torchSway;
 
-    public float sensitivity = 0.2f;
+    [Header("Look Settings")]
+public float defaultSensitivity = 0.2f;
+
+private float sensitivity;
     public float minPitch = -80f;
     public float maxPitch = 80f;
     public float minLookDelta = 0.01f;
@@ -29,6 +32,12 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 
     void Start()
     {
+        sensitivity = PlayerPrefs.GetFloat("Sensitivity", defaultSensitivity);
+
+    if (cameraTransform == null)
+    {
+        return;
+    }
         if (cameraTransform == null)
         {
             return;
@@ -87,4 +96,11 @@ public class MobileLook : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
 
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
+    public void SetSensitivity(float value)
+{
+    sensitivity = value;
+
+    PlayerPrefs.SetFloat("Sensitivity", value);
+    PlayerPrefs.Save();
+}
 }
