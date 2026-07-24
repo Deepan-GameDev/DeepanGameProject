@@ -9,7 +9,8 @@ public class LockedDoor : MonoBehaviour, IInteractable
         Room2,
         Room3,
         Room4,
-        Room5
+        Room5,
+        ExitDoor
     }
 
     [Header("References")]
@@ -78,9 +79,6 @@ public class LockedDoor : MonoBehaviour, IInteractable
         if (audioSource != null && unlockSound != null)
             audioSource.PlayOneShot(unlockSound);
 
-        if (objectiveManager != null)
-            objectiveManager.CompleteDoorObjective();
-
         StartCoroutine(OpenAfterUnlock());
     }
 
@@ -102,6 +100,9 @@ public class LockedDoor : MonoBehaviour, IInteractable
 
             case DoorKeyType.Room5:
                 return playerInventory.HasRoom5Key();
+
+            case DoorKeyType.ExitDoor:
+                return playerInventory.HasExitDoorKey();    
         }
 
         return false;

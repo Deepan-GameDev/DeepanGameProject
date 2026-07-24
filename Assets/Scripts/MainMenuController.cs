@@ -186,4 +186,27 @@ yield return new WaitForSeconds(0.15f);
         group.interactable = true;
         group.blocksRaycasts = true;
     }
+
+    public GameObject settingsPanel;
+
+public void OpenSettings()
+{
+    menuPanel.SetActive(false);
+    settingsPanel.SetActive(true);
+}
+
+public void CloseSettings()
+{
+    settingsPanel.SetActive(false);
+    menuPanel.SetActive(true);
+}
+
+public void ExitGame()
+{
+#if UNITY_EDITOR
+    UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
+}
 }

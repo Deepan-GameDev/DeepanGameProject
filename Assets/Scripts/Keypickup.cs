@@ -8,7 +8,8 @@ public class KeyPickup : MonoBehaviour, IPickup
         Room2,
         Room3,
         Room4,
-        Room5
+        Room5,
+        ExitDoor
     }
 
     [Header("Key Settings")]
@@ -50,6 +51,10 @@ public class KeyPickup : MonoBehaviour, IPickup
             case KeyType.Room5:
                 playerInventory.AddRoom5Key();
                 break;
+
+            case KeyType.ExitDoor:
+                playerInventory.AddExitDoorKey();
+                break;         
         }
 
         if (pickupSound != null)
@@ -84,17 +89,15 @@ public class KeyPickup : MonoBehaviour, IPickup
         case KeyType.Room5:
             message = "ROOM 5 KEY FOUND";
             break;
+
+        case KeyType.ExitDoor:
+            message = "EXITDOOR KEY FOUND";
+            break;
     }
 
     gameMessageUI.ShowMessage(message);
 }
         }
-
-        if (objectiveManager != null)
-        {
-            objectiveManager.CompleteKeyObjective();
-        }
-
-        Destroy(gameObject);
     }
+
 }

@@ -8,6 +8,8 @@ public class PlayerInventory : MonoBehaviour
     public bool hasRoom3Key;
     public bool hasRoom4Key;
     public bool hasRoom5Key;
+    public bool hasExitDoorKey;
+
 
     [Header("Other Items")]
     private bool hasBoatKey = false;
@@ -18,12 +20,15 @@ public class PlayerInventory : MonoBehaviour
     public void AddRoom3Key() => hasRoom3Key = true;
     public void AddRoom4Key() => hasRoom4Key = true;
     public void AddRoom5Key() => hasRoom5Key = true;
+    public void AddExitDoorKey() => hasExitDoorKey = true;
+
 
     public bool HasRoom1Key() => hasRoom1Key;
     public bool HasRoom2Key() => hasRoom2Key;
     public bool HasRoom3Key() => hasRoom3Key;
     public bool HasRoom4Key() => hasRoom4Key;
     public bool HasRoom5Key() => hasRoom5Key;
+    public bool HasExitDoorKey() => hasExitDoorKey;
 
     // ---------------- BOAT KEY ----------------
 
