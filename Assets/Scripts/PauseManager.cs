@@ -57,6 +57,13 @@ public void GoToMainMenu()
     sceneTransition.LoadScene("Main Menu");
 }
 
+public void RestartGame()
+{
+    Time.timeScale = 1f;
+
+    SceneTransition.Instance.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+}
+
 IEnumerator LoadMainMenu()
 {
     Time.timeScale = 1f;
@@ -65,4 +72,5 @@ IEnumerator LoadMainMenu()
 
     SceneManager.LoadScene("Main Menu");
 }
+
 }
