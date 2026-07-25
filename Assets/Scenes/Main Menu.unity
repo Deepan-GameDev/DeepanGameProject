@@ -1155,7 +1155,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 456672234}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1130582602}
+        m_TargetAssemblyTypeName: GraphicsSettings, Assembly-CSharp
+        m_MethodName: SetMedium
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &456672234
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3213,8 +3225,8 @@ MonoBehaviour:
   highButton: {fileID: 1673017261}
   mediumText: {fileID: 465870874}
   highText: {fileID: 1329784138}
-  selectedColor: {r: 1, g: 1, b: 1, a: 1}
-  normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  selectedColor: {r: 0.7735849, g: 0.25948864, b: 0.21456033, a: 1}
+  normalColor: {r: 0.9169811, g: 0.5726806, b: 0.5726806, a: 1}
   selectedScale: 1.08
   normalScale: 1
 --- !u!1 &1138858743
@@ -3300,8 +3312,8 @@ MonoBehaviour:
   m_FillRect: {fileID: 1357762382}
   m_HandleRect: {fileID: 202112305}
   m_Direction: 0
-  m_MinValue: 0.3
-  m_MaxValue: 1
+  m_MinValue: 0.05
+  m_MaxValue: 0.5
   m_WholeNumbers: 0
   m_Value: 0.5
   m_OnValueChanged:
@@ -3315,7 +3327,7 @@ MonoBehaviour:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
-          m_FloatArgument: 0.3
+          m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
@@ -4131,7 +4143,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1673017262}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1130582602}
+        m_TargetAssemblyTypeName: GraphicsSettings, Assembly-CSharp
+        m_MethodName: SetHigh
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1673017262
 MonoBehaviour:
   m_ObjectHideFlags: 0
