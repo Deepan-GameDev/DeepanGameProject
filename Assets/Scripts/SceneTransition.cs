@@ -41,12 +41,12 @@ public class SceneTransition : MonoBehaviour
     }
 
     public void LoadScene(string sceneName)
-    {
-        LoadingManager.sceneToLoad = sceneName;
-        StartCoroutine(FadeOut());
-    }
+{
+    LoadingManager.sceneToLoad = sceneName;
+    StartCoroutine(FadeOutAndLoad());
+}
 
-    IEnumerator FadeOut()
+    public IEnumerator FadeOut()
     {
         fadeGroup.blocksRaycasts = true;
 
@@ -63,4 +63,11 @@ public class SceneTransition : MonoBehaviour
 
         SceneManager.LoadScene("Loading Scene");
     }
+
+    IEnumerator FadeOutAndLoad()
+{
+    yield return StartCoroutine(FadeOut());
+
+    SceneManager.LoadScene("Loading Scene");
+}
 }
