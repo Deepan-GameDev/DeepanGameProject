@@ -98,6 +98,13 @@ public class KeyPickup : MonoBehaviour, IPickup
     gameMessageUI.ShowMessage(message);
 }
         }
+        
+        if (objectiveManager != null)
+        {
+            objectiveManager.CompleteKeyObjective();
+        }
+
+        Destroy(gameObject);
     }
 
 }

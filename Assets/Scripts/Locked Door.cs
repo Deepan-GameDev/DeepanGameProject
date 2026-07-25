@@ -78,6 +78,8 @@ public class LockedDoor : MonoBehaviour, IInteractable
 
         if (audioSource != null && unlockSound != null)
             audioSource.PlayOneShot(unlockSound);
+            if (objectiveManager != null)
+            objectiveManager.CompleteDoorObjective();
 
         StartCoroutine(OpenAfterUnlock());
     }
