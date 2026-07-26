@@ -5,7 +5,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class ZombieAI : MonoBehaviour
 {
-    private enum ZombieState { Patrol, Waiting, Screaming, Chase, Dead }
+    private enum ZombieState { Patrol, Waiting, Investigating, Screaming, Chase, Dead }
 
     private static readonly int IsWalking = Animator.StringToHash("IsWalking");
     private static readonly int IsScreaming = Animator.StringToHash("IsScreaming");
@@ -13,6 +13,12 @@ public class ZombieAI : MonoBehaviour
     private static readonly int MoveSpeed = Animator.StringToHash("MoveSpeed");
 
     private bool canMove = false;
+
+    [Header("Hearing")]
+[SerializeField] private float walkHearingRange = 3f;
+[SerializeField] private float runHearingRange = 8f;
+
+private Vector3 lastHeardPosition;
 
     [Header("References")]
     [SerializeField] private Transform player;
@@ -31,6 +37,11 @@ public class ZombieAI : MonoBehaviour
     [SerializeField, Range(1f, 180f)] private float fieldOfView = 100f;
     [SerializeField] private float eyeHeight = 1.6f;
     [SerializeField] private LayerMask detectionLayers = ~0;
+
+    [Header("Investigation")]
+[SerializeField] private float investigateTime = 5f;
+
+[SerializeField] private float lookRotationSpeed = 120f;
 
     [Header("Scream")]
     [SerializeField] private float screamDuration = 2.5f;
@@ -343,5 +354,90 @@ public class ZombieAI : MonoBehaviour
     {
         attackAudioSource.PlayOneShot(biteClip);
     }
+}
+
+public void Investigate(Vector3 position)
+{
+    if (state == ZombieState.Chase || playerDead)
+        return;
+
+    StopAllCoroutines();
+
+    StartCoroutine(InvestigateRoutine(position));
+}
+
+private IEnumerator InvestigateRoutine(Vector3 position)
+{
+    state = ZombieState.Investigating;
+
+    ConfigureAgent(chaseSpeed, chaseAcceleration, 0.5f);
+
+    agent.SetDestination(position);
+
+    while (agent.pathPending || agent.remainingDistance > 0.6f)
+    {
+        RotateTowards(agent.steeringTarget);
+
+        UpdateMovementAnimation(false);
+
+        yield return null;
+    }
+
+    StopAgent(true);
+
+    SetAnimation(false, false, false, 0f);
+
+    Quaternion startRotation = transform.rotation;
+
+    Quaternion left =
+        startRotation *
+        Quaternion.Euler(0, -45, 0);
+
+    Quaternion right =
+        startRotation *
+        Quaternion.Euler(0, 45, 0);
+
+    yield return RotateRoutine(left);
+
+    yield return RotateRoutine(right);
+
+    yield return RotateRoutine(startRotation);
+
+    state = ZombieState.Patrol;
+
+    ConfigureAgent(
+        patrolSpeed,
+        patrolAcceleration,
+        patrolPointDistance);
+
+    GoToPatrolPoint();
+}
+
+private IEnumerator RotateRoutine(Quaternion target)
+{
+    while (Quaternion.Angle(transform.rotation, target) > 1f)
+    {
+        transform.rotation =
+            Quaternion.RotateTowards(
+                transform.rotation,
+                target,
+                lookRotationSpeed * Time.deltaTime);
+
+        yield return null;
+    }
+
+    yield return new WaitForSeconds(1f);
+}
+   
+    public void HearNoise(Vector3 noisePosition)
+{
+    if (state == ZombieState.Chase ||
+        state == ZombieState.Screaming ||
+        playerDead)
+        return;
+
+    lastHeardPosition = noisePosition;
+
+    Investigate(lastHeardPosition);
 }
 }

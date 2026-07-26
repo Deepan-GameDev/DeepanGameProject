@@ -945,7 +945,7 @@ public class Player : MonoBehaviour
         return moveInput.sqrMagnitude > 0.01f;
     }
 
-    private bool IsRunning()
+    public bool IsRunning()
     {
         return runPressed
             && IsMoving()
