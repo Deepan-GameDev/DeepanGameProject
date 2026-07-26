@@ -22,6 +22,42 @@ public GameObject zombie;
     public AudioClip pickupSound;
     public ObjectiveManager objectiveManager;
 
+    private void Start()
+{
+    switch (keyType)
+    {
+        case KeyType.Room1:
+            if (PlayerPrefs.GetInt("Room1Key", 0) == 1)
+                Destroy(gameObject);
+            break;
+
+        case KeyType.Room2:
+            if (PlayerPrefs.GetInt("Room2Key", 0) == 1)
+                Destroy(gameObject);
+            break;
+
+        case KeyType.Room3:
+            if (PlayerPrefs.GetInt("Room3Key", 0) == 1)
+                Destroy(gameObject);
+            break;
+
+        case KeyType.Room4:
+            if (PlayerPrefs.GetInt("Room4Key", 0) == 1)
+                Destroy(gameObject);
+            break;
+
+        case KeyType.Room5:
+            if (PlayerPrefs.GetInt("Room5Key", 0) == 1)
+                Destroy(gameObject);
+            break;
+
+        case KeyType.ExitDoor:
+            if (PlayerPrefs.GetInt("ExitDoorKey", 0) == 1)
+                Destroy(gameObject);
+            break;
+    }
+}
+
     public void Pickup()
     {
         DrawerSlide drawer = GetComponentInParent<DrawerSlide>();
@@ -42,6 +78,9 @@ public GameObject zombie;
     {
         zombie.SetActive(true);
     }
+
+    PlayerPrefs.SetInt("HasSave", 1);
+PlayerPrefs.Save();
 
     break;
 

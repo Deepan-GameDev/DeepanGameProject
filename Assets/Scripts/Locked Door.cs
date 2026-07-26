@@ -21,6 +21,9 @@ public class LockedDoor : MonoBehaviour, IInteractable
     [Header("Required Key")]
     public DoorKeyType requiredKey;
 
+    [Header("Save")]
+public string doorSaveID;
+
     [Header("Door Settings")]
     public float openAngle = -90f;
     public float openSpeed = 2f;
@@ -39,10 +42,20 @@ public class LockedDoor : MonoBehaviour, IInteractable
     private Quaternion openRotation;
 
     void Start()
+{
+    closedRotation = transform.localRotation;
+    openRotation = closedRotation * Quaternion.Euler(0f, openAngle, 0f);
+
+    if (!string.IsNullOrEmpty(doorSaveID))
     {
-        closedRotation = transform.localRotation;
-        openRotation = closedRotation * Quaternion.Euler(0f, openAngle, 0f);
+        if (PlayerPrefs.GetInt(doorSaveID, 0) == 1)
+        {
+            isLocked = false;
+            isOpen = true;
+            transform.localRotation = openRotation;
+        }
     }
+}
 
     public void Interact()
     {
@@ -75,6 +88,12 @@ public class LockedDoor : MonoBehaviour, IInteractable
         }
 
         isLocked = false;
+
+        if (!string.IsNullOrEmpty(doorSaveID))
+{
+    PlayerPrefs.SetInt(doorSaveID, 1);
+    PlayerPrefs.Save();
+}
 
         if (audioSource != null && unlockSound != null)
             audioSource.PlayOneShot(unlockSound);

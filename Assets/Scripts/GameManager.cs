@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
 
     [Header("Lives")]
-    public int maxLives = 3;
+    public int maxLives = 2;
     public int currentLives;
 
     [Header("References")]
@@ -31,20 +31,28 @@ public class GameManager : MonoBehaviour
     {
         controller = player.GetComponent<CharacterController>();
         playerScript = player.GetComponent<Player>();
+        
+        LoadPlayerPosition();
     }
 
     public void PlayerDied()
+{
+    currentLives--;
+
+    if (currentLives == 1)
     {
-        currentLives--;
-
-        if (currentLives <= 0)
-        {
-            gameOverManager.GameOver();
-            return;
-        }
-
+        Debug.Log("One life remaining...");
         RespawnPlayer();
+        return;
     }
+
+    if(currentLives <= 0)
+{
+    SaveManager.DeleteSave();
+
+    gameOverManager.GameOver();
+}
+}
 
     private void RespawnPlayer()
 {
@@ -78,4 +86,29 @@ private IEnumerator RespawnRoutine()
     if (playerScript != null)
         playerScript.enabled = true;
 }
+    
+    public void ResetGame()
+{
+    currentLives = maxLives;
+}
+    
+    private void LoadPlayerPosition()
+{
+    if (PlayerPrefs.GetInt("HasSave", 0) == 0)
+        return;
+
+    CharacterController cc = player.GetComponent<CharacterController>();
+
+    if (cc != null)
+        cc.enabled = false;
+
+    player.position = new Vector3(
+        PlayerPrefs.GetFloat("PlayerX", startPoint.position.x),
+        PlayerPrefs.GetFloat("PlayerY", startPoint.position.y),
+        PlayerPrefs.GetFloat("PlayerZ", startPoint.position.z));
+
+    if (cc != null)
+        cc.enabled = true;
+}
+    
 }

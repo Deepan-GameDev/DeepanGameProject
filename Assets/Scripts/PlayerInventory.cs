@@ -15,13 +15,56 @@ public class PlayerInventory : MonoBehaviour
     private bool hasBoatKey = false;
     private bool hasLeverHandle = false;
 
-    public void AddRoom1Key() => hasRoom1Key = true;
-    public void AddRoom2Key() => hasRoom2Key = true;
-    public void AddRoom3Key() => hasRoom3Key = true;
-    public void AddRoom4Key() => hasRoom4Key = true;
-    public void AddRoom5Key() => hasRoom5Key = true;
-    public void AddExitDoorKey() => hasExitDoorKey = true;
+    private void Start()
+{
+    hasRoom1Key = PlayerPrefs.GetInt("Room1Key", 0) == 1;
+    hasRoom2Key = PlayerPrefs.GetInt("Room2Key", 0) == 1;
+    hasRoom3Key = PlayerPrefs.GetInt("Room3Key", 0) == 1;
+    hasRoom4Key = PlayerPrefs.GetInt("Room4Key", 0) == 1;
+    hasRoom5Key = PlayerPrefs.GetInt("Room5Key", 0) == 1;
+    hasExitDoorKey = PlayerPrefs.GetInt("ExitDoorKey", 0) == 1;
+}
+public void AddRoom1Key()
+{
+    hasRoom1Key = true;
+    PlayerPrefs.SetInt("Room1Key", 1);
+    PlayerPrefs.Save();
+}
 
+public void AddRoom2Key()
+{
+    hasRoom2Key = true;
+    PlayerPrefs.SetInt("Room2Key", 1);
+    PlayerPrefs.Save();
+}
+
+public void AddRoom3Key()
+{
+    hasRoom3Key = true;
+    PlayerPrefs.SetInt("Room3Key", 1);
+    PlayerPrefs.Save();
+}
+
+public void AddRoom4Key()
+{
+    hasRoom4Key = true;
+    PlayerPrefs.SetInt("Room4Key", 1);
+    PlayerPrefs.Save();
+}
+
+public void AddRoom5Key()
+{
+    hasRoom5Key = true;
+    PlayerPrefs.SetInt("Room5Key", 1);
+    PlayerPrefs.Save();
+}
+
+public void AddExitDoorKey()
+{
+    hasExitDoorKey = true;
+    PlayerPrefs.SetInt("ExitDoorKey", 1);
+    PlayerPrefs.Save();
+}
 
     public bool HasRoom1Key() => hasRoom1Key;
     public bool HasRoom2Key() => hasRoom2Key;

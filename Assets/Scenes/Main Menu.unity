@@ -5160,6 +5160,7 @@ GameObject:
   - component: {fileID: 2120826455}
   - component: {fileID: 2120826458}
   - component: {fileID: 2120826459}
+  - component: {fileID: 2120826460}
   m_Layer: 5
   m_Name: Continue
   m_TagString: Untagged
@@ -5296,6 +5297,19 @@ MonoBehaviour:
   audioSource: {fileID: 493647210}
   hoverClip: {fileID: 8300000, guid: fa0a4e39d8579e54c91378c93277069a, type: 3}
   clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
+--- !u!114 &2120826460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2120826453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c79b5c90df94824cb45af9871f0da67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ContinueButton
+  continueButton: {fileID: 2120826455}
 --- !u!1 &2123989773
 GameObject:
   m_ObjectHideFlags: 0
