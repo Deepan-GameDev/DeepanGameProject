@@ -12,6 +12,8 @@ public class ZombieAI : MonoBehaviour
     private static readonly int IsChasing = Animator.StringToHash("IsChasing");
     private static readonly int MoveSpeed = Animator.StringToHash("MoveSpeed");
 
+    private bool canMove = false;
+
     [Header("References")]
     [SerializeField] private Transform player;
     [SerializeField] private GameOverManager gameOverManager;
@@ -66,16 +68,17 @@ public class ZombieAI : MonoBehaviour
     }
 
     private void Start()
-    {
-        ActivateAnimator();
-        state = ZombieState.Patrol;
-        ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-        GoToPatrolPoint();
-    }
+{
+    ActivateAnimator();
+
+    StartCoroutine(SpawnSequence());
+}
 
     private void Update()
     {
         if (playerDead || player == null) return;
+        if (!canMove)
+    return;
 
         switch (state)
         {
@@ -115,6 +118,32 @@ public class ZombieAI : MonoBehaviour
         StopAgent(true);
         StartCoroutine(PatrolPauseRoutine());
     }
+
+    private IEnumerator SpawnSequence()
+{
+    state = ZombieState.Screaming;
+
+    StopAgent(true);
+
+    SetAnimation(false, true, false, 0f);
+
+    yield return new WaitForSeconds(1f);
+
+    if (zombieAudioSource != null && screamSound != null)
+    {
+        zombieAudioSource.PlayOneShot(screamSound);
+    }
+
+    yield return new WaitForSeconds(2f);
+
+    canMove = true;
+
+    state = ZombieState.Patrol;
+
+    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
+
+    GoToPatrolPoint();
+}
 
     private IEnumerator PatrolPauseRoutine()
     {

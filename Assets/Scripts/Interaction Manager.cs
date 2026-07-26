@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 public class InteractionManager : MonoBehaviour
 {
+    public CenterDotController centerDot;
     public Camera playerCamera;
     public float interactDistance = 2.5f;
     public float interactRadius = 0.35f;
@@ -34,14 +35,21 @@ public class InteractionManager : MonoBehaviour
     }
 
     private void SetCurrentInteractable(IInteractable interactable)
-    {
-        currentInteractable = interactable;
+{
+    currentInteractable = interactable;
 
-        if (interactButton != null)
-        {
-            interactButton.gameObject.SetActive(currentInteractable != null);
-        }
+    bool hasInteractable = currentInteractable != null;
+
+    if (interactButton != null)
+    {
+        interactButton.gameObject.SetActive(hasInteractable);
     }
+
+    if (centerDot != null)
+    {
+        centerDot.SetInteracting(hasInteractable);
+    }
+}
 
     private IInteractable FindInteractable(Ray ray)
     {

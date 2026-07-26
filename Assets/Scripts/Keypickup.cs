@@ -11,6 +11,8 @@ public class KeyPickup : MonoBehaviour, IPickup
         Room5,
         ExitDoor
     }
+    [Header("Zombie Spawn")]
+public GameObject zombie;
 
     [Header("Key Settings")]
     public KeyType keyType;
@@ -33,8 +35,15 @@ public class KeyPickup : MonoBehaviour, IPickup
         switch (keyType)
         {
             case KeyType.Room1:
-                playerInventory.AddRoom1Key();
-                break;
+
+    playerInventory.AddRoom1Key();
+
+    if (zombie != null)
+    {
+        zombie.SetActive(true);
+    }
+
+    break;
 
             case KeyType.Room2:
                 playerInventory.AddRoom2Key();
