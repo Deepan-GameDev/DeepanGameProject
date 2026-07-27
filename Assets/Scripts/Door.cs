@@ -21,6 +21,7 @@ public class Door : MonoBehaviour, IInteractable
     public float openAngle = -90f;
     public AudioClip openDoor;
     public AudioClip closeDoor;
+    public bool canZombieOpenLockedDoor = false;
 
     private AudioSource audioSource;
     private Quaternion closedRotation;
@@ -90,5 +91,16 @@ public class Door : MonoBehaviour, IInteractable
             if (clip != null)
                 audioSource.PlayOneShot(clip);
         }
+    }
+
+    public void OpenForZombie()
+    {
+        if (open || (requiredKey != DoorKeyType.None && !canZombieOpenLockedDoor))
+            return;
+
+        open = true;
+
+        if (audioSource != null && openDoor != null)
+            audioSource.PlayOneShot(openDoor);
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class ZombieAI : MonoBehaviour
@@ -67,10 +68,20 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private AudioClip biteClip;
     [SerializeField] private float attackDuration = 1.3f;
     [SerializeField] private float biteSoundDelay = 1f;
+    [SerializeField] private Image bloodOverlay;
+    [SerializeField] private float bloodFadeInDuration = 0.25f;
+    [SerializeField] private AudioSource playerScreamAudioSource;
+    [SerializeField] private AudioClip playerScreamClip;
 
     [Header("Movement Animation")]
     [SerializeField] private float turnSpeed = 240f;
     [SerializeField] private float movingAnimationThreshold = 0.08f;
+
+    [Header("Doors")]
+    [SerializeField] private float doorOpenDistance = 1.5f;
+    [SerializeField] private float doorCheckHeight = 1f;
+    [SerializeField] private float doorCheckRadius = 0.3f;
+    [SerializeField] private LayerMask doorDetectionLayers = ~0;
 
     private NavMeshAgent agent;
     private ZombieState state;
@@ -80,6 +91,8 @@ public class ZombieAI : MonoBehaviour
     private bool isAttacking;
     private Vector3 lastKnownPlayerPosition;
     private float timeSincePlayerSeen;
+    private Coroutine bloodOverlayRoutine;
+    private readonly RaycastHit[] doorHits = new RaycastHit[4];
 
     private void Awake()
     {
@@ -303,6 +316,8 @@ public class ZombieAI : MonoBehaviour
             }
         }
 
+        TryOpenBlockingDoor();
+
         RotateTowards(agent.steeringTarget);
         UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
 
@@ -334,6 +349,7 @@ public class ZombieAI : MonoBehaviour
                 yield break;
             }
 
+            TryOpenBlockingDoor();
             RotateTowards(agent.steeringTarget);
             UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
             yield return null;
@@ -458,6 +474,7 @@ public class ZombieAI : MonoBehaviour
         StopAgent(true);
         FaceTarget(player.position);
         SetAnimation(LocomotionMode.Idle, 0f);
+        PlayAttackEffect();
 
         Player playerComponent = player.GetComponent<Player>();
         if (playerComponent != null)
@@ -511,6 +528,7 @@ public class ZombieAI : MonoBehaviour
         playerDead = false;
         isAttacking = false;
         canMove = true;
+        ResetBloodOverlay();
         StartChase();
     }
 
@@ -520,6 +538,68 @@ public class ZombieAI : MonoBehaviour
         {
             attackAudioSource.PlayOneShot(biteClip);
         }
+    }
+
+    private void PlayAttackEffect()
+    {
+        if (playerScreamAudioSource != null && playerScreamClip != null)
+        {
+            playerScreamAudioSource.PlayOneShot(playerScreamClip);
+        }
+
+        if (bloodOverlay == null)
+        {
+            return;
+        }
+
+        if (bloodOverlayRoutine != null)
+        {
+            StopCoroutine(bloodOverlayRoutine);
+        }
+
+        bloodOverlay.gameObject.SetActive(true);
+        bloodOverlayRoutine = StartCoroutine(FadeBloodOverlayIn());
+    }
+
+    private IEnumerator FadeBloodOverlayIn()
+    {
+        Color color = bloodOverlay.color;
+        color.a = 0f;
+        bloodOverlay.color = color;
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, bloodFadeInDuration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            color.a = Mathf.Lerp(0f, 1f, elapsed / duration);
+            bloodOverlay.color = color;
+            yield return null;
+        }
+
+        color.a = 1f;
+        bloodOverlay.color = color;
+        bloodOverlayRoutine = null;
+    }
+
+    private void ResetBloodOverlay()
+    {
+        if (bloodOverlay == null)
+        {
+            return;
+        }
+
+        if (bloodOverlayRoutine != null)
+        {
+            StopCoroutine(bloodOverlayRoutine);
+            bloodOverlayRoutine = null;
+        }
+
+        Color color = bloodOverlay.color;
+        color.a = 0f;
+        bloodOverlay.color = color;
+        bloodOverlay.gameObject.SetActive(false);
     }
 
     private void ConfigureAgent(float speed, float acceleration, float stoppingDistance)
@@ -672,5 +752,35 @@ public class ZombieAI : MonoBehaviour
         }
 
         stateRoutine = StartCoroutine(routine);
+    }
+    private void TryOpenBlockingDoor()
+    {
+        Vector3 direction = agent.desiredVelocity.sqrMagnitude > 0.01f
+            ? agent.desiredVelocity.normalized
+            : (agent.steeringTarget - transform.position).normalized;
+
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            direction = transform.forward;
+        }
+
+        Vector3 origin = transform.position + Vector3.up * doorCheckHeight;
+        int hitCount = Physics.SphereCastNonAlloc(origin, doorCheckRadius, direction, doorHits, doorOpenDistance, doorDetectionLayers, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hitCollider = doorHits[i].collider;
+            if (hitCollider == null || hitCollider.transform == transform || hitCollider.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            Door door = hitCollider.GetComponentInParent<Door>();
+            if (door != null)
+            {
+                door.OpenForZombie();
+                return;
+            }
+        }
     }
 }
