@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
 
     private CharacterController controller;
     private Player playerScript;
+    private Rigidbody playerRigidbody;
 
     private void Awake()
     {
@@ -31,6 +32,7 @@ public class GameManager : MonoBehaviour
     {
         controller = player.GetComponent<CharacterController>();
         playerScript = player.GetComponent<Player>();
+        playerRigidbody = player.GetComponent<Rigidbody>();
         
         LoadPlayerPosition();
     }
@@ -73,11 +75,15 @@ private IEnumerator RespawnRoutine()
 
     yield return null;
 
-    // Move to start position
-    player.position = startPoint.position;
-    player.rotation = startPoint.rotation;
+    Vector3 respawnPosition = PlayerPrefs.GetInt("HasSave", 0) == 1
+        ? SaveManager.LoadCheckpointPosition(startPoint.position)
+        : startPoint.position;
 
-    player.GetComponent<Player>().enabled = true;
+    Quaternion respawnRotation = PlayerPrefs.GetInt("HasSave", 0) == 1
+        ? SaveManager.LoadCheckpointRotation(startPoint.rotation)
+        : startPoint.rotation;
+
+    TeleportPlayer(respawnPosition, respawnRotation);
 
     // Enable again
     if (cc != null)
@@ -97,18 +103,31 @@ private IEnumerator RespawnRoutine()
     if (PlayerPrefs.GetInt("HasSave", 0) == 0)
         return;
 
-    CharacterController cc = player.GetComponent<CharacterController>();
+    TeleportPlayer(
+        SaveManager.LoadCheckpointPosition(startPoint.position),
+        SaveManager.LoadCheckpointRotation(startPoint.rotation));
+}
 
-    if (cc != null)
-        cc.enabled = false;
+    private void TeleportPlayer(Vector3 position, Quaternion rotation)
+{
+    if (controller != null)
+        controller.enabled = false;
 
-    player.position = new Vector3(
-        PlayerPrefs.GetFloat("PlayerX", startPoint.position.x),
-        PlayerPrefs.GetFloat("PlayerY", startPoint.position.y),
-        PlayerPrefs.GetFloat("PlayerZ", startPoint.position.z));
+    if (playerRigidbody != null)
+    {
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
+        playerRigidbody.position = position;
+        playerRigidbody.rotation = rotation;
+    }
 
-    if (cc != null)
-        cc.enabled = true;
+    player.position = position;
+    player.rotation = rotation;
+
+    Physics.SyncTransforms();
+
+    if (controller != null)
+        controller.enabled = true;
 }
     
 }

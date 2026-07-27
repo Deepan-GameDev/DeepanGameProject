@@ -28,7 +28,14 @@ public GameObject zombie;
     {
         case KeyType.Room1:
             if (PlayerPrefs.GetInt("Room1Key", 0) == 1)
+            {
+                if (zombie != null)
+                {
+                    zombie.SetActive(true);
+                }
+
                 Destroy(gameObject);
+            }
             break;
 
         case KeyType.Room2:
@@ -79,8 +86,7 @@ public GameObject zombie;
         zombie.SetActive(true);
     }
 
-    PlayerPrefs.SetInt("HasSave", 1);
-PlayerPrefs.Save();
+    SaveManager.SaveCheckpoint(playerInventory.transform);
 
     break;
 

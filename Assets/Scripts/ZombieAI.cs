@@ -11,6 +11,7 @@ public class ZombieAI : MonoBehaviour
     private static readonly int IsScreaming = Animator.StringToHash("IsScreaming");
     private static readonly int IsChasing = Animator.StringToHash("IsChasing");
     private static readonly int MoveSpeed = Animator.StringToHash("MoveSpeed");
+    private static readonly int Attack = Animator.StringToHash("Attack");
 
     private bool canMove = false;
 
@@ -67,6 +68,7 @@ private Vector3 lastHeardPosition;
     private int patrolIndex;
     private bool hasScreamed;
     private bool playerDead;
+    private bool isAttacking;
 
     private void Awake()
     {
@@ -88,6 +90,7 @@ private Vector3 lastHeardPosition;
     private void Update()
     {
         if (playerDead || player == null) return;
+        if (isAttacking) return;
         if (!canMove)
     return;
 
@@ -266,7 +269,12 @@ private Vector3 lastHeardPosition;
         zombieAnimator.SetBool(IsWalking, walking);
         zombieAnimator.SetBool(IsScreaming, screaming);
         zombieAnimator.SetBool(IsChasing, chasing);
-        zombieAnimator.SetFloat(MoveSpeed, Mathf.Clamp(normalizedMoveSpeed, 0.01f, 1.25f));
+
+        float moveSpeed = Mathf.Clamp(normalizedMoveSpeed, 0f, 1.25f);
+        if (Time.deltaTime > 0f)
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, 0.12f, Time.deltaTime);
+        else
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed);
     }
 
     private bool CanSeePlayer()
@@ -299,27 +307,40 @@ private Vector3 lastHeardPosition;
 
     GameManager.Instance.PlayerDied();
 
+    yield return null;
+
+    if (GameManager.Instance == null || GameManager.Instance.currentLives <= 0)
+        yield break;
+
     playerDead = false;
-    hasScreamed = false;
+    isAttacking = false;
+    canMove = true;
 
-    state = ZombieState.Patrol;
-
-    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-
-    GoToPatrolPoint();
+    StartChase();
 }
 
-    private IEnumerator AttackPlayer()
+private IEnumerator AttackPlayer()
 {
+    if (isAttacking)
+        yield break;
+
+    isAttacking = true;
     playerDead = true;
 
     // Disable player movement
-    player.GetComponent<Player>().enabled = false;
+    Player playerComponent = player.GetComponent<Player>();
+    if (playerComponent != null)
+        playerComponent.enabled = false;
 
     StopAgent(true);
 
     // Play attack animation
-    zombieAnimator.SetTrigger("Attack");
+    SetAnimation(false, false, false, 0f);
+    if (zombieAnimator != null)
+    {
+        zombieAnimator.ResetTrigger(Attack);
+        zombieAnimator.SetTrigger(Attack);
+    }
 
     // Wait 1 second
     yield return new WaitForSeconds(1f);
@@ -336,14 +357,16 @@ private Vector3 lastHeardPosition;
     // Player loses a life / respawns
     GameManager.Instance.PlayerDied();
 
+    yield return null;
+
+    if (GameManager.Instance == null || GameManager.Instance.currentLives <= 0)
+        yield break;
+
     playerDead = false;
-    hasScreamed = false;
+    isAttacking = false;
+    canMove = true;
 
-    state = ZombieState.Patrol;
-
-    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-
-    GoToPatrolPoint();
+    StartChase();
 }
 
     private IEnumerator PlayBiteSoundDelayed()
@@ -358,7 +381,11 @@ private Vector3 lastHeardPosition;
 
 public void Investigate(Vector3 position)
 {
-    if (state == ZombieState.Chase || playerDead)
+    if (!canMove ||
+        state == ZombieState.Chase ||
+        state == ZombieState.Screaming ||
+        playerDead ||
+        isAttacking)
         return;
 
     StopAllCoroutines();
@@ -371,10 +398,11 @@ private IEnumerator InvestigateRoutine(Vector3 position)
     state = ZombieState.Investigating;
 
     ConfigureAgent(chaseSpeed, chaseAcceleration, 0.5f);
+    if (!CanUseAgent()) yield break;
 
     agent.SetDestination(position);
 
-    while (agent.pathPending || agent.remainingDistance > 0.6f)
+    while (CanUseAgent() && (agent.pathPending || agent.remainingDistance > 0.6f))
     {
         RotateTowards(agent.steeringTarget);
 

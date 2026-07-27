@@ -46,6 +46,11 @@ public Vector2 menuLogoPosition;
 
     void Start()
     {
+        if (continueGroup != null)
+        {
+            continueGroup.gameObject.SetActive(true);
+        }
+
         menuPanel.SetActive(false);
     }
 

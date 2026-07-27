@@ -2,6 +2,27 @@ using UnityEngine;
 
 public static class SaveManager
 {
+    private static readonly string[] GameplayKeys =
+    {
+        "HasSave",
+        "PlayerX",
+        "PlayerY",
+        "PlayerZ",
+        "PlayerRotY",
+        "Room1Key",
+        "Room2Key",
+        "Room3Key",
+        "Room4Key",
+        "Room5Key",
+        "ExitDoorKey",
+        "Room 1",
+        "Room 2",
+        "Room 3",
+        "Room 4",
+        "Room 5",
+        "Exit Door"
+    };
+
     public static void SaveInt(string key, int value)
     {
         PlayerPrefs.SetInt(key, value);
@@ -35,9 +56,41 @@ public static class SaveManager
         return PlayerPrefs.GetInt(key, 0) == 1;
     }
 
+    public static void SaveCheckpoint(Transform player)
+    {
+        if (player == null) return;
+
+        PlayerPrefs.SetInt("HasSave", 1);
+        PlayerPrefs.SetFloat("PlayerX", player.position.x);
+        PlayerPrefs.SetFloat("PlayerY", player.position.y);
+        PlayerPrefs.SetFloat("PlayerZ", player.position.z);
+        PlayerPrefs.SetFloat("PlayerRotY", player.eulerAngles.y);
+        PlayerPrefs.Save();
+    }
+
+    public static Vector3 LoadCheckpointPosition(Vector3 fallback)
+    {
+        return new Vector3(
+            PlayerPrefs.GetFloat("PlayerX", fallback.x),
+            PlayerPrefs.GetFloat("PlayerY", fallback.y),
+            PlayerPrefs.GetFloat("PlayerZ", fallback.z));
+    }
+
+    public static Quaternion LoadCheckpointRotation(Quaternion fallback)
+    {
+        return Quaternion.Euler(
+            fallback.eulerAngles.x,
+            PlayerPrefs.GetFloat("PlayerRotY", fallback.eulerAngles.y),
+            fallback.eulerAngles.z);
+    }
+
     public static void DeleteSave()
     {
-        PlayerPrefs.DeleteAll();
+        for (int i = 0; i < GameplayKeys.Length; i++)
+        {
+            PlayerPrefs.DeleteKey(GameplayKeys[i]);
+        }
+
         PlayerPrefs.Save();
     }
 }

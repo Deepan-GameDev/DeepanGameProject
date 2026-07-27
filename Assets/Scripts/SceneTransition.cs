@@ -42,6 +42,20 @@ public class SceneTransition : MonoBehaviour
 
     public void LoadScene(string sceneName)
 {
+    if (sceneName == "level 1")
+    {
+        SaveManager.DeleteSave();
+    }
+
+    LoadingManager.sceneToLoad = sceneName;
+    StartCoroutine(FadeOutAndLoad());
+}
+
+    public void ContinueGame(string sceneName)
+{
+    if (PlayerPrefs.GetInt("HasSave", 0) == 0)
+        return;
+
     LoadingManager.sceneToLoad = sceneName;
     StartCoroutine(FadeOutAndLoad());
 }
