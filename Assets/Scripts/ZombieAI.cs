@@ -5,7 +5,8 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class ZombieAI : MonoBehaviour
 {
-    private enum ZombieState { Patrol, Waiting, Investigating, Screaming, Chase, Dead }
+    private enum ZombieState { Idle, Patrol, Waiting, Investigating, Screaming, Chase, Attacking, Dead }
+    private enum LocomotionMode { Idle, Walk, Run }
 
     private static readonly int IsWalking = Animator.StringToHash("IsWalking");
     private static readonly int IsScreaming = Animator.StringToHash("IsScreaming");
@@ -13,18 +14,24 @@ public class ZombieAI : MonoBehaviour
     private static readonly int MoveSpeed = Animator.StringToHash("MoveSpeed");
     private static readonly int Attack = Animator.StringToHash("Attack");
 
-    private bool canMove = false;
+    private const string ScreamStateName = "Zombie Scream";
+    private const string BiteStateName = "Zombie Neck Bite";
+
+    private bool canMove;
 
     [Header("Hearing")]
-[SerializeField] private float walkHearingRange = 3f;
-[SerializeField] private float runHearingRange = 8f;
+    [SerializeField] private float walkHearingRange = 3f;
+    [SerializeField] private float runHearingRange = 8f;
 
-private Vector3 lastHeardPosition;
+    private Vector3 lastHeardPosition;
 
     [Header("References")]
     [SerializeField] private Transform player;
     [SerializeField] private GameOverManager gameOverManager;
     [SerializeField] private Animator zombieAnimator;
+
+    [Header("Startup")]
+    [SerializeField] private float initialIdleTime = 0.75f;
 
     [Header("Patrol")]
     [SerializeField] private Transform[] patrolPoints;
@@ -40,9 +47,9 @@ private Vector3 lastHeardPosition;
     [SerializeField] private LayerMask detectionLayers = ~0;
 
     [Header("Investigation")]
-[SerializeField] private float investigateTime = 5f;
-
-[SerializeField] private float lookRotationSpeed = 120f;
+    [SerializeField] private float investigateTime = 5f;
+    [SerializeField] private float lookRotationSpeed = 120f;
+    [SerializeField] private float investigationArriveDistance = 0.6f;
 
     [Header("Scream")]
     [SerializeField] private float screamDuration = 2.5f;
@@ -53,46 +60,48 @@ private Vector3 lastHeardPosition;
     [SerializeField] private float chaseSpeed = 3f;
     [SerializeField] private float chaseAcceleration = 5.5f;
     [SerializeField] private float killDistance = 1f;
+    [SerializeField] private float loseSightDelay = 1.25f;
 
     [Header("Attack")]
     [SerializeField] private AudioSource attackAudioSource;
     [SerializeField] private AudioClip biteClip;
+    [SerializeField] private float attackDuration = 1.3f;
+    [SerializeField] private float biteSoundDelay = 1f;
 
     [Header("Movement Animation")]
     [SerializeField] private float turnSpeed = 240f;
     [SerializeField] private float movingAnimationThreshold = 0.08f;
 
-
     private NavMeshAgent agent;
     private ZombieState state;
+    private Coroutine stateRoutine;
     private int patrolIndex;
-    private bool hasScreamed;
     private bool playerDead;
     private bool isAttacking;
+    private Vector3 lastKnownPlayerPosition;
+    private float timeSincePlayerSeen;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         if (zombieAnimator == null) zombieAnimator = GetComponent<Animator>();
 
-        // The agent owns translation only; this script is the single owner of yaw.
         agent.updateRotation = false;
         agent.autoBraking = true;
     }
 
     private void Start()
-{
-    ActivateAnimator();
-
-    StartCoroutine(SpawnSequence());
-}
+    {
+        ActivateAnimator();
+        StartStateRoutine(StartupRoutine());
+    }
 
     private void Update()
     {
-        if (playerDead || player == null) return;
-        if (isAttacking) return;
-        if (!canMove)
-    return;
+        if (playerDead || player == null || isAttacking || !canMove)
+        {
+            return;
+        }
 
         switch (state)
         {
@@ -108,100 +117,146 @@ private Vector3 lastHeardPosition;
     private void ActivateAnimator()
     {
         if (zombieAnimator == null) return;
+
         zombieAnimator.enabled = true;
         zombieAnimator.Rebind();
         zombieAnimator.Update(0f);
-        SetAnimation(false, false, false, 0f);
+        SetAnimation(LocomotionMode.Idle, 0f);
+    }
+
+    private IEnumerator StartupRoutine()
+    {
+        state = ZombieState.Idle;
+        canMove = false;
+        StopAgent(true);
+        SetAnimation(LocomotionMode.Idle, 0f);
+
+        yield return new WaitForSeconds(initialIdleTime);
+
+        canMove = true;
+        BeginPatrol();
     }
 
     private void UpdatePatrol()
     {
-        if (CanSeePlayer())
+        if (TrySeePlayerAndScream())
         {
-            StartScream();
             return;
         }
 
-        if (!CanUseAgent() || agent.pathPending) return;
+        if (!CanUseAgent() || agent.pathPending)
+        {
+            return;
+        }
 
-        UpdateMovementAnimation(false);
+        UpdateMovementAnimation(LocomotionMode.Walk, patrolSpeed);
         RotateTowards(agent.steeringTarget);
 
-        if (agent.remainingDistance > agent.stoppingDistance || agent.velocity.sqrMagnitude > 0.01f) return;
-
-        StopAgent(true);
-        StartCoroutine(PatrolPauseRoutine());
+        if (HasArrived(patrolPointDistance))
+        {
+            StartStateRoutine(PatrolPauseRoutine());
+        }
     }
-
-    private IEnumerator SpawnSequence()
-{
-    state = ZombieState.Screaming;
-
-    StopAgent(true);
-
-    SetAnimation(false, true, false, 0f);
-
-    yield return new WaitForSeconds(1f);
-
-    if (zombieAudioSource != null && screamSound != null)
-    {
-        zombieAudioSource.PlayOneShot(screamSound);
-    }
-
-    yield return new WaitForSeconds(2f);
-
-    canMove = true;
-
-    state = ZombieState.Patrol;
-
-    ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-
-    GoToPatrolPoint();
-}
 
     private IEnumerator PatrolPauseRoutine()
     {
         state = ZombieState.Waiting;
-        SetAnimation(false, false, false, 0f);
-        yield return new WaitForSeconds(patrolWaitTime);
+        StopAgent(true);
+        SetAnimation(LocomotionMode.Idle, 0f);
 
-        if (playerDead) yield break;
+        float elapsed = 0f;
+        while (elapsed < patrolWaitTime)
+        {
+            if (TrySeePlayerAndScream())
+            {
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (playerDead)
+        {
+            yield break;
+        }
+
         patrolIndex = patrolPoints != null && patrolPoints.Length > 0 ? (patrolIndex + 1) % patrolPoints.Length : 0;
+        BeginPatrol();
+    }
+
+    private void BeginPatrol()
+    {
         state = ZombieState.Patrol;
         ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
+        SetAnimation(LocomotionMode.Walk, 1f);
         GoToPatrolPoint();
     }
 
     private void GoToPatrolPoint()
     {
         if (!CanUseAgent() || patrolPoints == null || patrolPoints.Length == 0) return;
+
         Transform point = patrolPoints[patrolIndex];
         if (point == null) return;
 
         if (NavMesh.SamplePosition(point.position, out NavMeshHit hit, 1.5f, agent.areaMask))
+        {
             agent.SetDestination(hit.position);
+        }
         else
+        {
             Debug.LogWarning($"{name}: patrol point '{point.name}' is not on this agent's NavMesh.", this);
+        }
+    }
+
+    private bool TrySeePlayerAndScream()
+    {
+        if (!CanSeePlayer())
+        {
+            return false;
+        }
+
+        lastKnownPlayerPosition = player.position;
+        StartScream();
+        return true;
     }
 
     private void StartScream()
     {
-        if (hasScreamed) return;
-        hasScreamed = true;
-        StartCoroutine(ScreamRoutine());
+        if (state == ZombieState.Screaming || state == ZombieState.Attacking || state == ZombieState.Dead)
+        {
+            return;
+        }
+
+        StartStateRoutine(ScreamRoutine());
     }
 
     private IEnumerator ScreamRoutine()
     {
         state = ZombieState.Screaming;
         StopAgent(true);
-        SetAnimation(false, true, false, 0f);
-        if (zombieAudioSource != null && screamSound != null) zombieAudioSource.PlayOneShot(screamSound);
+        SetAnimation(LocomotionMode.Idle, 0f, true);
+
+        if (zombieAnimator != null)
+        {
+            zombieAnimator.CrossFadeInFixedTime(ScreamStateName, 0.08f, 0, 0f);
+        }
+
+        if (zombieAudioSource != null && screamSound != null)
+        {
+            zombieAudioSource.PlayOneShot(screamSound);
+        }
 
         float elapsed = 0f;
         while (elapsed < screamDuration)
         {
-            if (player != null) RotateTowards(player.position);
+            if (player != null)
+            {
+                FaceTarget(player.position);
+                lastKnownPlayerPosition = player.position;
+            }
+
             elapsed += Time.deltaTime;
             yield return null;
         }
@@ -211,25 +266,266 @@ private Vector3 lastHeardPosition;
 
     private void StartChase()
     {
+        if (player == null || playerDead)
+        {
+            return;
+        }
+
         state = ZombieState.Chase;
+        timeSincePlayerSeen = 0f;
         ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
+        SetAnimation(LocomotionMode.Run, 1f);
+        agent.SetDestination(player.position);
     }
 
     private void UpdateChase()
     {
-        if (!CanUseAgent()) return;
-        agent.SetDestination(player.position);
+        if (!CanUseAgent())
+        {
+            return;
+        }
+
+        if (CanSeePlayer())
+        {
+            lastKnownPlayerPosition = player.position;
+            timeSincePlayerSeen = 0f;
+            agent.SetDestination(lastKnownPlayerPosition);
+        }
+        else
+        {
+            timeSincePlayerSeen += Time.deltaTime;
+            agent.SetDestination(lastKnownPlayerPosition);
+
+            if (timeSincePlayerSeen >= loseSightDelay && HasArrived(investigationArriveDistance))
+            {
+                StartStateRoutine(InvestigateRoutine(lastKnownPlayerPosition));
+                return;
+            }
+        }
+
         RotateTowards(agent.steeringTarget);
-        UpdateMovementAnimation(true);
+        UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
 
         Vector3 toPlayer = player.position - transform.position;
         toPlayer.y = 0f;
-        if (toPlayer.sqrMagnitude <= killDistance * killDistance) StartCoroutine(AttackPlayer());
+        if (toPlayer.sqrMagnitude <= killDistance * killDistance)
+        {
+            StartStateRoutine(AttackPlayer());
+        }
+    }
+
+    private IEnumerator InvestigateRoutine(Vector3 position)
+    {
+        state = ZombieState.Investigating;
+        ConfigureAgent(chaseSpeed, chaseAcceleration, investigationArriveDistance);
+
+        if (!CanUseAgent())
+        {
+            yield break;
+        }
+
+        SetAnimation(LocomotionMode.Run, 1f);
+        SetDestinationOnNavMesh(position, 1.5f);
+
+        while (CanUseAgent() && (agent.pathPending || !HasArrived(investigationArriveDistance)))
+        {
+            if (TrySeePlayerAndScream())
+            {
+                yield break;
+            }
+
+            RotateTowards(agent.steeringTarget);
+            UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
+            yield return null;
+        }
+
+        StopAgent(true);
+        SetAnimation(LocomotionMode.Idle, 0f);
+
+        Quaternion startRotation = transform.rotation;
+        Quaternion left = startRotation * Quaternion.Euler(0f, -45f, 0f);
+        Quaternion right = startRotation * Quaternion.Euler(0f, 45f, 0f);
+
+        if (yieldReturnIfPlayerSeen()) yield break;
+        yield return RotateRoutine(left);
+        if (yieldReturnIfPlayerSeen()) yield break;
+        yield return RotateRoutine(right);
+        if (yieldReturnIfPlayerSeen()) yield break;
+        yield return RotateRoutine(startRotation);
+
+        float elapsed = 0f;
+        while (elapsed < investigateTime)
+        {
+            if (TrySeePlayerAndScream())
+            {
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        BeginPatrol();
+
+        bool yieldReturnIfPlayerSeen()
+        {
+            return TrySeePlayerAndScream();
+        }
+    }
+
+    private IEnumerator RotateRoutine(Quaternion target)
+    {
+        while (Quaternion.Angle(transform.rotation, target) > 1f)
+        {
+            if (TrySeePlayerAndScream())
+            {
+                yield break;
+            }
+
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, target, lookRotationSpeed * Time.deltaTime);
+            yield return null;
+        }
+
+        float wait = 0.35f;
+        while (wait > 0f)
+        {
+            if (TrySeePlayerAndScream())
+            {
+                yield break;
+            }
+
+            wait -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    public void Investigate(Vector3 position)
+    {
+        if (!CanRespondToInvestigation())
+        {
+            return;
+        }
+
+        lastHeardPosition = position;
+        StartStateRoutine(InvestigateRoutine(lastHeardPosition));
+    }
+
+    public void HearNoise(Vector3 noisePosition)
+    {
+        HearNoise(noisePosition, false);
+    }
+
+    public void HearNoise(Vector3 noisePosition, bool isRunningNoise)
+    {
+        if (!CanRespondToInvestigation())
+        {
+            return;
+        }
+
+        float hearingRange = isRunningNoise ? runHearingRange : walkHearingRange;
+        Vector3 toNoise = noisePosition - transform.position;
+        toNoise.y = 0f;
+        if (toNoise.sqrMagnitude > hearingRange * hearingRange)
+        {
+            return;
+        }
+
+        lastHeardPosition = noisePosition;
+        StartStateRoutine(InvestigateRoutine(lastHeardPosition));
+    }
+
+    private bool CanRespondToInvestigation()
+    {
+        return canMove &&
+            state != ZombieState.Chase &&
+            state != ZombieState.Screaming &&
+            state != ZombieState.Attacking &&
+            !playerDead &&
+            !isAttacking;
+    }
+
+    private IEnumerator AttackPlayer()
+    {
+        if (isAttacking)
+        {
+            yield break;
+        }
+
+        state = ZombieState.Attacking;
+        isAttacking = true;
+        playerDead = true;
+
+        StopAgent(true);
+        FaceTarget(player.position);
+        SetAnimation(LocomotionMode.Idle, 0f);
+
+        Player playerComponent = player.GetComponent<Player>();
+        if (playerComponent != null)
+        {
+            playerComponent.enabled = false;
+        }
+
+        if (zombieAnimator != null)
+        {
+            zombieAnimator.ResetTrigger(Attack);
+            zombieAnimator.SetTrigger(Attack);
+            zombieAnimator.CrossFadeInFixedTime(BiteStateName, 0.05f, 0, 0f);
+        }
+
+        float elapsed = 0f;
+        bool biteSoundPlayed = false;
+        float duration = Mathf.Max(attackDuration, biteSoundDelay);
+
+        while (elapsed < duration)
+        {
+            FaceTarget(player.position);
+
+            if (!biteSoundPlayed && elapsed >= biteSoundDelay)
+            {
+                biteSoundPlayed = true;
+                PlayBiteSound();
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (!biteSoundPlayed)
+        {
+            PlayBiteSound();
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.PlayerDied();
+        }
+
+        yield return null;
+
+        if (GameManager.Instance == null || GameManager.Instance.currentLives <= 0)
+        {
+            state = ZombieState.Dead;
+            yield break;
+        }
+
+        playerDead = false;
+        isAttacking = false;
+        canMove = true;
+        StartChase();
+    }
+
+    private void PlayBiteSound()
+    {
+        if (attackAudioSource != null && biteClip != null)
+        {
+            attackAudioSource.PlayOneShot(biteClip);
+        }
     }
 
     private void ConfigureAgent(float speed, float acceleration, float stoppingDistance)
     {
         if (!CanUseAgent()) return;
+
         agent.isStopped = false;
         agent.speed = speed;
         agent.acceleration = acceleration;
@@ -241,231 +537,140 @@ private Vector3 lastHeardPosition;
     private void StopAgent(bool clearPath)
     {
         if (!CanUseAgent()) return;
+
         agent.isStopped = true;
-        if (clearPath) agent.ResetPath();
+        agent.velocity = Vector3.zero;
+        if (clearPath)
+        {
+            agent.ResetPath();
+        }
     }
 
-    private bool CanUseAgent() => agent != null && agent.enabled && agent.isOnNavMesh;
+    private bool CanUseAgent()
+    {
+        return agent != null && agent.enabled && agent.isOnNavMesh;
+    }
+
+    private bool HasArrived(float arriveDistance)
+    {
+        if (!CanUseAgent() || agent.pathPending)
+        {
+            return false;
+        }
+
+        float distance = Mathf.Max(arriveDistance, agent.stoppingDistance);
+        return agent.remainingDistance <= distance &&
+            (!agent.hasPath || agent.velocity.sqrMagnitude <= movingAnimationThreshold * movingAnimationThreshold);
+    }
+
+    private bool SetDestinationOnNavMesh(Vector3 position, float sampleDistance)
+    {
+        if (!CanUseAgent())
+        {
+            return false;
+        }
+
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, sampleDistance, agent.areaMask))
+        {
+            return agent.SetDestination(hit.position);
+        }
+
+        return agent.SetDestination(position);
+    }
 
     private void RotateTowards(Vector3 target)
     {
         Vector3 direction = target - transform.position;
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.0001f) return;
+
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), turnSpeed * Time.deltaTime);
     }
 
-    private void UpdateMovementAnimation(bool chasing)
+    private void FaceTarget(Vector3 target)
     {
-        float speed = CanUseAgent() ? agent.velocity.magnitude : 0f;
-        bool moving = speed > movingAnimationThreshold;
-        float referenceSpeed = chasing ? chaseSpeed : patrolSpeed;
-        SetAnimation(!chasing && moving, false, chasing && moving, referenceSpeed > 0f ? speed / referenceSpeed : 0f);
+        Vector3 direction = target - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.0001f) return;
+
+        transform.rotation = Quaternion.LookRotation(direction);
     }
 
-    private void SetAnimation(bool walking, bool screaming, bool chasing, float normalizedMoveSpeed)
+    private void UpdateMovementAnimation(LocomotionMode mode, float referenceSpeed)
+    {
+        if (!CanUseAgent())
+        {
+            SetAnimation(LocomotionMode.Idle, 0f);
+            return;
+        }
+
+        bool wantsToMove = agent.hasPath && !agent.isStopped && !HasArrived(agent.stoppingDistance);
+        float speed = Mathf.Max(agent.velocity.magnitude, agent.desiredVelocity.magnitude);
+        float normalizedSpeed = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
+
+        if (wantsToMove && normalizedSpeed < 0.65f)
+        {
+            normalizedSpeed = 0.65f;
+        }
+
+        SetAnimation(wantsToMove ? mode : LocomotionMode.Idle, normalizedSpeed);
+    }
+
+    private void SetAnimation(LocomotionMode mode, float normalizedMoveSpeed, bool screaming = false)
     {
         if (zombieAnimator == null) return;
+
+        bool walking = mode == LocomotionMode.Walk;
+        bool running = mode == LocomotionMode.Run;
+
         zombieAnimator.SetBool(IsWalking, walking);
         zombieAnimator.SetBool(IsScreaming, screaming);
-        zombieAnimator.SetBool(IsChasing, chasing);
+        zombieAnimator.SetBool(IsChasing, running);
 
         float moveSpeed = Mathf.Clamp(normalizedMoveSpeed, 0f, 1.25f);
         if (Time.deltaTime > 0f)
-            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, 0.12f, Time.deltaTime);
+        {
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, 0.1f, Time.deltaTime);
+        }
         else
+        {
             zombieAnimator.SetFloat(MoveSpeed, moveSpeed);
+        }
     }
 
     private bool CanSeePlayer()
     {
+        if (player == null)
+        {
+            return false;
+        }
+
         Vector3 eye = transform.position + Vector3.up * eyeHeight;
         Vector3 target = player.position + Vector3.up;
         Vector3 toPlayer = target - eye;
         float distance = toPlayer.magnitude;
-        if (distance > detectionRange) return false;
+        if (distance > detectionRange)
+        {
+            return false;
+        }
 
         Vector3 flatDirection = Vector3.ProjectOnPlane(toPlayer, Vector3.up);
-        if (flatDirection.sqrMagnitude < 0.0001f || Vector3.Angle(transform.forward, flatDirection) > fieldOfView * 0.5f) return false;
+        if (flatDirection.sqrMagnitude < 0.0001f || Vector3.Angle(transform.forward, flatDirection) > fieldOfView * 0.5f)
+        {
+            return false;
+        }
 
         return Physics.Raycast(eye, toPlayer.normalized, out RaycastHit hit, distance, detectionLayers, QueryTriggerInteraction.Ignore)
             && (hit.transform == player || hit.transform.IsChildOf(player));
     }
 
-    private void KillPlayer()
+    private void StartStateRoutine(IEnumerator routine)
     {
-        playerDead = true;
-        state = ZombieState.Dead;
-        StopAgent(true);
-        SetAnimation(false, false, false, 0f);
-        if (gameOverManager != null) StartCoroutine(KillRoutine());
+        if (stateRoutine != null)
+        {
+            StopCoroutine(stateRoutine);
+        }
+
+        stateRoutine = StartCoroutine(routine);
     }
-
-    private IEnumerator KillRoutine()
-{
-    yield return new WaitForSeconds(0.2f);
-
-    GameManager.Instance.PlayerDied();
-
-    yield return null;
-
-    if (GameManager.Instance == null || GameManager.Instance.currentLives <= 0)
-        yield break;
-
-    playerDead = false;
-    isAttacking = false;
-    canMove = true;
-
-    StartChase();
-}
-
-private IEnumerator AttackPlayer()
-{
-    if (isAttacking)
-        yield break;
-
-    isAttacking = true;
-    playerDead = true;
-
-    // Disable player movement
-    Player playerComponent = player.GetComponent<Player>();
-    if (playerComponent != null)
-        playerComponent.enabled = false;
-
-    StopAgent(true);
-
-    // Play attack animation
-    SetAnimation(false, false, false, 0f);
-    if (zombieAnimator != null)
-    {
-        zombieAnimator.ResetTrigger(Attack);
-        zombieAnimator.SetTrigger(Attack);
-    }
-
-    // Wait 1 second
-    yield return new WaitForSeconds(1f);
-
-    // Play bite sound
-    if (attackAudioSource != null && biteClip != null)
-    {
-        attackAudioSource.PlayOneShot(biteClip);
-    }
-
-    // Wait for the remaining animation time
-    yield return new WaitForSeconds(0.3f);
-
-    // Player loses a life / respawns
-    GameManager.Instance.PlayerDied();
-
-    yield return null;
-
-    if (GameManager.Instance == null || GameManager.Instance.currentLives <= 0)
-        yield break;
-
-    playerDead = false;
-    isAttacking = false;
-    canMove = true;
-
-    StartChase();
-}
-
-    private IEnumerator PlayBiteSoundDelayed()
-{
-    yield return new WaitForSeconds(1f);
-
-    if (attackAudioSource != null && biteClip != null)
-    {
-        attackAudioSource.PlayOneShot(biteClip);
-    }
-}
-
-public void Investigate(Vector3 position)
-{
-    if (!canMove ||
-        state == ZombieState.Chase ||
-        state == ZombieState.Screaming ||
-        playerDead ||
-        isAttacking)
-        return;
-
-    StopAllCoroutines();
-
-    StartCoroutine(InvestigateRoutine(position));
-}
-
-private IEnumerator InvestigateRoutine(Vector3 position)
-{
-    state = ZombieState.Investigating;
-
-    ConfigureAgent(chaseSpeed, chaseAcceleration, 0.5f);
-    if (!CanUseAgent()) yield break;
-
-    agent.SetDestination(position);
-
-    while (CanUseAgent() && (agent.pathPending || agent.remainingDistance > 0.6f))
-    {
-        RotateTowards(agent.steeringTarget);
-
-        UpdateMovementAnimation(false);
-
-        yield return null;
-    }
-
-    StopAgent(true);
-
-    SetAnimation(false, false, false, 0f);
-
-    Quaternion startRotation = transform.rotation;
-
-    Quaternion left =
-        startRotation *
-        Quaternion.Euler(0, -45, 0);
-
-    Quaternion right =
-        startRotation *
-        Quaternion.Euler(0, 45, 0);
-
-    yield return RotateRoutine(left);
-
-    yield return RotateRoutine(right);
-
-    yield return RotateRoutine(startRotation);
-
-    state = ZombieState.Patrol;
-
-    ConfigureAgent(
-        patrolSpeed,
-        patrolAcceleration,
-        patrolPointDistance);
-
-    GoToPatrolPoint();
-}
-
-private IEnumerator RotateRoutine(Quaternion target)
-{
-    while (Quaternion.Angle(transform.rotation, target) > 1f)
-    {
-        transform.rotation =
-            Quaternion.RotateTowards(
-                transform.rotation,
-                target,
-                lookRotationSpeed * Time.deltaTime);
-
-        yield return null;
-    }
-
-    yield return new WaitForSeconds(1f);
-}
-   
-    public void HearNoise(Vector3 noisePosition)
-{
-    if (state == ZombieState.Chase ||
-        state == ZombieState.Screaming ||
-        playerDead)
-        return;
-
-    lastHeardPosition = noisePosition;
-
-    Investigate(lastHeardPosition);
-}
 }

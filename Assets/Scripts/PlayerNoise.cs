@@ -21,9 +21,15 @@ public class PlayerNoise : MonoBehaviour
         if (player == null || zombie == null)
             return;
 
+        if (!player.GetIsMoving())
+        {
+            timer = 0f;
+            return;
+        }
+
         timer += Time.deltaTime;
 
-        bool running = player.IsRunning();
+        bool running = player.GetIsRunning();
 
         float interval = running ? runNoiseInterval : walkNoiseInterval;
 
@@ -31,7 +37,7 @@ public class PlayerNoise : MonoBehaviour
         {
             timer = 0f;
 
-            zombie.HearNoise(transform.position);
+            zombie.HearNoise(transform.position, running);
         }
     }
 }
