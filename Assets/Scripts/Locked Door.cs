@@ -163,4 +163,25 @@ public string doorSaveID;
         transform.localRotation = targetRotation;
         isMoving = false;
     }
+
+    public bool IsLocked()
+{
+    return isLocked;
+}
+
+public bool IsOpen()
+{
+    return isOpen;
+}
+
+public void OpenByZombie()
+{
+    if (isLocked)
+        return;
+
+    if (isOpen)
+        return;
+
+    ToggleDoor();
+}
 }

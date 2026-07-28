@@ -95,6 +95,8 @@ public class Door : MonoBehaviour, IInteractable
 
     public void OpenForZombie()
     {
+        Debug.Log("Zombie tried to open: " + gameObject.name);
+
         if (open || (requiredKey != DoorKeyType.None && !canZombieOpenLockedDoor))
             return;
 

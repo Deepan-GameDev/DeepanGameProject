@@ -755,6 +755,7 @@ public class ZombieAI : MonoBehaviour
     }
     private void TryOpenBlockingDoor()
     {
+        
         Vector3 direction = agent.desiredVelocity.sqrMagnitude > 0.01f
             ? agent.desiredVelocity.normalized
             : (agent.steeringTarget - transform.position).normalized;
@@ -778,9 +779,32 @@ public class ZombieAI : MonoBehaviour
             Door door = hitCollider.GetComponentInParent<Door>();
             if (door != null)
             {
-                door.OpenForZombie();
+                if (!door.open && (door.requiredKey == Door.DoorKeyType.None || door.canZombieOpenLockedDoor))
+                {
+                    door.OpenForZombie();
+                }
+
+                return;
+            }
+
+            LockedDoor lockedDoor = hitCollider.GetComponentInParent<LockedDoor>();
+            if (lockedDoor != null)
+            {
+                if (!lockedDoor.IsLocked() && !lockedDoor.IsOpen())
+                {
+                    lockedDoor.OpenByZombie();
+                }
+
                 return;
             }
         }
+
+        Debug.DrawRay(
+    transform.position + Vector3.up * doorCheckHeight,
+    direction * doorOpenDistance,
+    Color.red
+);
+
+Debug.Log("Direction : " + direction);
     }
 }
