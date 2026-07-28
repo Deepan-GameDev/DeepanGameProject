@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
 
     [Header("Lives")]
-    public int maxLives = 2;
+    public int maxLives = 3;
     public int currentLives;
 
     [Header("References")]
@@ -17,6 +17,9 @@ public class GameManager : MonoBehaviour
     private CharacterController controller;
     private Player playerScript;
     private Rigidbody playerRigidbody;
+
+    [Header("Death Transition")]
+public DeathTransitionUI deathTransitionUI;
 
     private void Awake()
     {
@@ -39,21 +42,7 @@ public class GameManager : MonoBehaviour
 
     public void PlayerDied()
 {
-    currentLives--;
-
-    if (currentLives == 1)
-    {
-        Debug.Log("One life remaining...");
-        RespawnPlayer();
-        return;
-    }
-
-    if(currentLives <= 0)
-{
-    SaveManager.DeleteSave();
-
-    gameOverManager.GameOver();
-}
+    StartCoroutine(PlayerDiedRoutine());
 }
 
     private void RespawnPlayer()
@@ -73,19 +62,19 @@ private IEnumerator RespawnRoutine()
     if (cc != null)
         cc.enabled = false;
 
+    // Play second chance transition
+    if (deathTransitionUI != null)
+    {
+        yield return StartCoroutine(deathTransitionUI.PlaySecondChance());
+    }
+
+    // Respawn player
+   TeleportPlayer(
+    SaveManager.LoadCheckpointPosition(startPoint.position),
+    SaveManager.LoadCheckpointRotation(startPoint.rotation));
+
     yield return null;
 
-    Vector3 respawnPosition = PlayerPrefs.GetInt("HasSave", 0) == 1
-        ? SaveManager.LoadCheckpointPosition(startPoint.position)
-        : startPoint.position;
-
-    Quaternion respawnRotation = PlayerPrefs.GetInt("HasSave", 0) == 1
-        ? SaveManager.LoadCheckpointRotation(startPoint.rotation)
-        : startPoint.rotation;
-
-    TeleportPlayer(respawnPosition, respawnRotation);
-
-    // Enable again
     if (cc != null)
         cc.enabled = true;
 
@@ -128,6 +117,23 @@ private IEnumerator RespawnRoutine()
 
     if (controller != null)
         controller.enabled = true;
+}   
+    
+    public IEnumerator PlayerDiedRoutine()
+{
+    currentLives--;
+
+    // First death → Second Chance
+    if (currentLives > 0)
+    {
+        yield return StartCoroutine(RespawnRoutine());
+        yield break;
+    }
+
+    // Final death
+    SaveManager.DeleteSave();
+
+    gameOverManager.GameOver();
 }
     
 }

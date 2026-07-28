@@ -83,6 +83,9 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private float doorCheckRadius = 0.3f;
     [SerializeField] private LayerMask doorDetectionLayers = ~0;
 
+    [Header("Patrol Sound")]
+[SerializeField] private AudioSource patrolAudioSource;
+
     private NavMeshAgent agent;
     private ZombieState state;
     private Coroutine stateRoutine;
@@ -204,6 +207,10 @@ public class ZombieAI : MonoBehaviour
         ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
         SetAnimation(LocomotionMode.Walk, 1f);
         GoToPatrolPoint();
+        if (patrolAudioSource != null && !patrolAudioSource.isPlaying)
+{
+    patrolAudioSource.Play();
+}
     }
 
     private void GoToPatrolPoint()
@@ -289,6 +296,11 @@ public class ZombieAI : MonoBehaviour
         ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
         SetAnimation(LocomotionMode.Run, 1f);
         agent.SetDestination(player.position);
+
+        if (patrolAudioSource != null)
+{
+    patrolAudioSource.Stop();
+}
     }
 
     private void UpdateChase()
@@ -514,7 +526,7 @@ public class ZombieAI : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.PlayerDied();
+            yield return StartCoroutine(GameManager.Instance.PlayerDiedRoutine());
         }
 
         yield return null;
@@ -798,13 +810,13 @@ public class ZombieAI : MonoBehaviour
                 return;
             }
         }
-
-        Debug.DrawRay(
-    transform.position + Vector3.up * doorCheckHeight,
-    direction * doorOpenDistance,
-    Color.red
-);
-
-Debug.Log("Direction : " + direction);
     }
+
+    public void ResetToPatrol()
+{
+    // Move back to initial spawn position
+    // Clear chase/investigation state
+    // Start patrol from first patrol point
+}
+    
 }
