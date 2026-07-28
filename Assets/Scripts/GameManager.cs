@@ -18,8 +18,11 @@ public class GameManager : MonoBehaviour
     private Player playerScript;
     private Rigidbody playerRigidbody;
 
+    [Header("References")]
+    public ZombieAI zombie;
+
     [Header("Death Transition")]
-public DeathTransitionUI deathTransitionUI;
+    public DeathTransitionUI deathTransitionUI;
 
     private void Awake()
     {
@@ -65,6 +68,7 @@ private IEnumerator RespawnRoutine()
     // Play second chance transition
     if (deathTransitionUI != null)
     {
+        yield return null;
         yield return StartCoroutine(deathTransitionUI.PlaySecondChance());
     }
 
@@ -72,6 +76,14 @@ private IEnumerator RespawnRoutine()
    TeleportPlayer(
     SaveManager.LoadCheckpointPosition(startPoint.position),
     SaveManager.LoadCheckpointRotation(startPoint.rotation));
+
+    if (zombie == null)
+        zombie = FindAnyObjectByType<ZombieAI>();
+
+    if (zombie != null)
+    {
+        zombie.ResetZombie();
+    }
 
     yield return null;
 

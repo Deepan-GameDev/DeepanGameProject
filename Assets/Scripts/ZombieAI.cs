@@ -76,6 +76,9 @@ public class ZombieAI : MonoBehaviour
     [Header("Movement Animation")]
     [SerializeField] private float turnSpeed = 240f;
     [SerializeField] private float movingAnimationThreshold = 0.08f;
+    [SerializeField] private float moveSpeedDampTime = 0.15f;
+    [SerializeField] private float screamCrossFadeDuration = 0.18f;
+    [SerializeField] private float biteCrossFadeDuration = 0.12f;
 
     [Header("Doors")]
     [SerializeField] private float doorOpenDistance = 1.5f;
@@ -84,7 +87,7 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private LayerMask doorDetectionLayers = ~0;
 
     [Header("Patrol Sound")]
-[SerializeField] private AudioSource patrolAudioSource;
+    [SerializeField] private AudioSource patrolAudioSource;
 
     private NavMeshAgent agent;
     private ZombieState state;
@@ -97,10 +100,21 @@ public class ZombieAI : MonoBehaviour
     private Coroutine bloodOverlayRoutine;
     private readonly RaycastHit[] doorHits = new RaycastHit[4];
 
+    private Vector3 spawnPosition;
+    private Quaternion spawnRotation;
+    private LocomotionMode currentAnimationMode;
+    private bool currentScreaming;
+    private bool animationInitialized;
+
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        if (zombieAnimator == null) zombieAnimator = GetComponent<Animator>();
+
+        spawnPosition = transform.position;
+        spawnRotation = transform.rotation;
+
+        if (zombieAnimator == null)
+            zombieAnimator = GetComponent<Animator>();
 
         agent.updateRotation = false;
         agent.autoBraking = true;
@@ -137,6 +151,7 @@ public class ZombieAI : MonoBehaviour
         zombieAnimator.enabled = true;
         zombieAnimator.Rebind();
         zombieAnimator.Update(0f);
+        animationInitialized = false;
         SetAnimation(LocomotionMode.Idle, 0f);
     }
 
@@ -205,12 +220,12 @@ public class ZombieAI : MonoBehaviour
     {
         state = ZombieState.Patrol;
         ConfigureAgent(patrolSpeed, patrolAcceleration, patrolPointDistance);
-        SetAnimation(LocomotionMode.Walk, 1f);
         GoToPatrolPoint();
+        UpdateMovementAnimation(LocomotionMode.Walk, patrolSpeed);
         if (patrolAudioSource != null && !patrolAudioSource.isPlaying)
-{
-    patrolAudioSource.Play();
-}
+        {
+            patrolAudioSource.Play();
+        }
     }
 
     private void GoToPatrolPoint()
@@ -260,7 +275,7 @@ public class ZombieAI : MonoBehaviour
 
         if (zombieAnimator != null)
         {
-            zombieAnimator.CrossFadeInFixedTime(ScreamStateName, 0.08f, 0, 0f);
+            zombieAnimator.CrossFadeInFixedTime(ScreamStateName, screamCrossFadeDuration, 0, 0f);
         }
 
         if (zombieAudioSource != null && screamSound != null)
@@ -294,13 +309,13 @@ public class ZombieAI : MonoBehaviour
         state = ZombieState.Chase;
         timeSincePlayerSeen = 0f;
         ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
-        SetAnimation(LocomotionMode.Run, 1f);
         agent.SetDestination(player.position);
+        UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
 
         if (patrolAudioSource != null)
-{
-    patrolAudioSource.Stop();
-}
+        {
+            patrolAudioSource.Stop();
+        }
     }
 
     private void UpdateChase()
@@ -497,8 +512,7 @@ public class ZombieAI : MonoBehaviour
         if (zombieAnimator != null)
         {
             zombieAnimator.ResetTrigger(Attack);
-            zombieAnimator.SetTrigger(Attack);
-            zombieAnimator.CrossFadeInFixedTime(BiteStateName, 0.05f, 0, 0f);
+            zombieAnimator.CrossFadeInFixedTime(BiteStateName, biteCrossFadeDuration, 0, 0f);
         }
 
         float elapsed = 0f;
@@ -537,11 +551,11 @@ public class ZombieAI : MonoBehaviour
             yield break;
         }
 
-        playerDead = false;
-        isAttacking = false;
-        canMove = true;
-        ResetBloodOverlay();
-        StartChase();
+       playerDead = false;
+       isAttacking = false;
+       canMove = false;
+       ResetBloodOverlay();
+       yield break;
     }
 
     private void PlayBiteSound()
@@ -697,12 +711,12 @@ public class ZombieAI : MonoBehaviour
         }
 
         bool wantsToMove = agent.hasPath && !agent.isStopped && !HasArrived(agent.stoppingDistance);
-        float speed = Mathf.Max(agent.velocity.magnitude, agent.desiredVelocity.magnitude);
+        float speed = agent.velocity.magnitude;
         float normalizedSpeed = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
 
-        if (wantsToMove && normalizedSpeed < 0.65f)
+        if (wantsToMove && normalizedSpeed < movingAnimationThreshold)
         {
-            normalizedSpeed = 0.65f;
+            normalizedSpeed = movingAnimationThreshold;
         }
 
         SetAnimation(wantsToMove ? mode : LocomotionMode.Idle, normalizedSpeed);
@@ -715,14 +729,21 @@ public class ZombieAI : MonoBehaviour
         bool walking = mode == LocomotionMode.Walk;
         bool running = mode == LocomotionMode.Run;
 
-        zombieAnimator.SetBool(IsWalking, walking);
-        zombieAnimator.SetBool(IsScreaming, screaming);
-        zombieAnimator.SetBool(IsChasing, running);
+        if (!animationInitialized || currentAnimationMode != mode || currentScreaming != screaming)
+        {
+            zombieAnimator.SetBool(IsWalking, walking);
+            zombieAnimator.SetBool(IsScreaming, screaming);
+            zombieAnimator.SetBool(IsChasing, running);
+
+            currentAnimationMode = mode;
+            currentScreaming = screaming;
+            animationInitialized = true;
+        }
 
         float moveSpeed = Mathf.Clamp(normalizedMoveSpeed, 0f, 1.25f);
         if (Time.deltaTime > 0f)
         {
-            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, 0.1f, Time.deltaTime);
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, moveSpeedDampTime, Time.deltaTime);
         }
         else
         {
@@ -811,12 +832,59 @@ public class ZombieAI : MonoBehaviour
             }
         }
     }
+    
 
-    public void ResetToPatrol()
-{
-    // Move back to initial spawn position
-    // Clear chase/investigation state
-    // Start patrol from first patrol point
-}
+    public void ResetZombie()
+    {
+        if (stateRoutine != null)
+        {
+            StopCoroutine(stateRoutine);
+            stateRoutine = null;
+        }
+
+        if (bloodOverlayRoutine != null)
+        {
+            StopCoroutine(bloodOverlayRoutine);
+            bloodOverlayRoutine = null;
+        }
+
+        if (zombieAudioSource != null)
+            zombieAudioSource.Stop();
+
+        if (attackAudioSource != null)
+            attackAudioSource.Stop();
+
+        if (patrolAudioSource != null)
+            patrolAudioSource.Stop();
+
+        playerDead = false;
+        isAttacking = false;
+        canMove = false;
+        state = ZombieState.Idle;
+
+        lastKnownPlayerPosition = Vector3.zero;
+        lastHeardPosition = Vector3.zero;
+        timeSincePlayerSeen = 0f;
+        patrolIndex = 0;
+
+        ResetBloodOverlay();
+
+        if (CanUseAgent())
+        {
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+            agent.isStopped = true;
+            agent.Warp(spawnPosition);
+        }
+        else
+        {
+            transform.position = spawnPosition;
+        }
+
+        transform.rotation = spawnRotation;
+
+        ActivateAnimator();
+        StartStateRoutine(StartupRoutine());
+    }
     
 }
