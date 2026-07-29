@@ -67,6 +67,14 @@ public class KeypadInteractionController : MonoBehaviour
         }
     }
 
+    public void EnterKeypad(Transform cameraPoint)
+{
+    if (cameraPoint != null)
+        keypadCameraPoint = cameraPoint;
+
+    EnterKeypad();
+}
+
     public void EnterKeypad()
     {
         if (inKeypadMode || returningToGameplay)

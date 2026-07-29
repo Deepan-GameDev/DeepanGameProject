@@ -57,11 +57,6 @@ public GameObject zombie;
             if (PlayerPrefs.GetInt("Room5Key", 0) == 1)
                 Destroy(gameObject);
             break;
-
-        case KeyType.ExitDoor:
-            if (PlayerPrefs.GetInt("ExitDoorKey", 0) == 1)
-                Destroy(gameObject);
-            break;
     }
 }
 
@@ -104,11 +99,7 @@ public GameObject zombie;
 
             case KeyType.Room5:
                 playerInventory.AddRoom5Key();
-                break;
-
-            case KeyType.ExitDoor:
-                playerInventory.AddExitDoorKey();
-                break;         
+                break;       
         }
 
         if (pickupSound != null)
@@ -142,10 +133,6 @@ public GameObject zombie;
 
         case KeyType.Room5:
             message = "ROOM 5 KEY FOUND";
-            break;
-
-        case KeyType.ExitDoor:
-            message = "EXITDOOR KEY FOUND";
             break;
     }
 
