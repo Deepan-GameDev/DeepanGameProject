@@ -68,14 +68,17 @@ private IEnumerator RespawnRoutine()
     // Play second chance transition
     if (deathTransitionUI != null)
     {
+        Debug.Log("1 - Respawn Started");
         yield return null;
+        Debug.Log("2 - Before Transition");
+
         yield return StartCoroutine(deathTransitionUI.PlaySecondChance());
     }
-
     // Respawn player
    TeleportPlayer(
     SaveManager.LoadCheckpointPosition(startPoint.position),
     SaveManager.LoadCheckpointRotation(startPoint.rotation));
+
 
     if (zombie == null)
         zombie = FindAnyObjectByType<ZombieAI>();

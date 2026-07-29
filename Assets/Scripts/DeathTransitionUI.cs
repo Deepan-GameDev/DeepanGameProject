@@ -15,7 +15,6 @@ public class DeathTransitionUI : MonoBehaviour
         Instance = this;
 
         blackScreen.alpha = 0;
-        gameObject.SetActive(false);
 
         if (messageText != null)
             messageText.alpha = 0;
@@ -23,7 +22,12 @@ public class DeathTransitionUI : MonoBehaviour
 
     public IEnumerator PlaySecondChance()
     {
+        // DeathScreen starts inactive in the scene, so make it visible before the first fade.
         gameObject.SetActive(true);
+        blackScreen.alpha = 0f;
+
+        if (messageText != null)
+            messageText.alpha = 0f;
 
         // Fade Black
         while (blackScreen.alpha < 1)
@@ -34,7 +38,7 @@ public class DeathTransitionUI : MonoBehaviour
 
         blackScreen.alpha = 1;
 
-        yield return new WaitForSeconds(4f);
+        yield return new WaitForSeconds(8f);
 
         // Show Text
         if (messageText != null)
@@ -46,7 +50,7 @@ public class DeathTransitionUI : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(7f);
 
         // Hide Text
         if (messageText != null)
@@ -58,7 +62,7 @@ public class DeathTransitionUI : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(4f);
 
         // Fade Out Black
         while (blackScreen.alpha > 0)
@@ -69,6 +73,10 @@ public class DeathTransitionUI : MonoBehaviour
 
         blackScreen.alpha = 0;
 
+        if (messageText != null)
+            messageText.alpha = 0f;
+
+        // Return the overlay to its initial inactive state so every death starts identically.
         gameObject.SetActive(false);
     }
 }

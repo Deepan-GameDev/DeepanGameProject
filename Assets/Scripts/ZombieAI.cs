@@ -284,12 +284,34 @@ public class ZombieAI : MonoBehaviour
         }
 
         float elapsed = 0f;
-        while (elapsed < screamDuration)
+        float audioDuration = screamSound != null ? screamSound.length : 0f;
+        float minimumDuration = Mathf.Max(0f, screamDuration);
+        bool hasEnteredScreamState = zombieAnimator == null;
+        bool screamAnimationFinished = zombieAnimator == null;
+
+        while (elapsed < minimumDuration || elapsed < audioDuration || !screamAnimationFinished)
         {
             if (player != null)
             {
-                FaceTarget(player.position);
+                // Keep turning smoothly during the scream, but do not allow movement/chase yet.
+                RotateTowards(player.position);
                 lastKnownPlayerPosition = player.position;
+            }
+
+            if (zombieAnimator != null)
+            {
+                AnimatorStateInfo currentState = zombieAnimator.GetCurrentAnimatorStateInfo(0);
+                AnimatorStateInfo nextState = zombieAnimator.GetNextAnimatorStateInfo(0);
+                bool currentIsScream = currentState.IsName(ScreamStateName);
+                bool nextIsScream = zombieAnimator.IsInTransition(0) && nextState.IsName(ScreamStateName);
+
+                hasEnteredScreamState |= currentIsScream || nextIsScream;
+
+                // Chase is allowed only after the scream state has actually played through.
+                screamAnimationFinished = hasEnteredScreamState &&
+                    currentIsScream &&
+                    !zombieAnimator.IsInTransition(0) &&
+                    currentState.normalizedTime >= 1f;
             }
 
             elapsed += Time.deltaTime;
