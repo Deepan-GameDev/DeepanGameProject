@@ -72,7 +72,8 @@ private IEnumerator RespawnRoutine()
         yield return null;
         Debug.Log("2 - Before Transition");
 
-        yield return StartCoroutine(deathTransitionUI.PlaySecondChance());
+        int chanceNumber = maxLives - currentLives + 1;
+        yield return StartCoroutine(deathTransitionUI.PlaySecondChance(chanceNumber));
     }
     // Respawn player
    TeleportPlayer(
@@ -92,6 +93,11 @@ private IEnumerator RespawnRoutine()
 
     if (cc != null)
         cc.enabled = true;
+
+    if (deathTransitionUI != null)
+    {
+        yield return StartCoroutine(deathTransitionUI.FadeBackToGameplay());
+    }
 
     if (playerScript != null)
         playerScript.enabled = true;

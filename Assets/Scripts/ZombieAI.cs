@@ -46,6 +46,7 @@ public class ZombieAI : MonoBehaviour
     [SerializeField, Range(1f, 180f)] private float fieldOfView = 100f;
     [SerializeField] private float eyeHeight = 1.6f;
     [SerializeField] private LayerMask detectionLayers = ~0;
+    [SerializeField] private float visibilityCastRadius = 0.12f;
 
     [Header("Investigation")]
     [SerializeField] private float investigateTime = 5f;
@@ -99,6 +100,7 @@ public class ZombieAI : MonoBehaviour
     private float timeSincePlayerSeen;
     private Coroutine bloodOverlayRoutine;
     private readonly RaycastHit[] doorHits = new RaycastHit[4];
+    private readonly RaycastHit[] visibilityHits = new RaycastHit[8];
 
     private Vector3 spawnPosition;
     private Quaternion spawnRotation;
@@ -285,11 +287,11 @@ public class ZombieAI : MonoBehaviour
 
         float elapsed = 0f;
         float audioDuration = screamSound != null ? screamSound.length : 0f;
-        float minimumDuration = Mathf.Max(0f, screamDuration);
+        float requiredDuration = Mathf.Max(0f, screamDuration, audioDuration);
         bool hasEnteredScreamState = zombieAnimator == null;
         bool screamAnimationFinished = zombieAnimator == null;
 
-        while (elapsed < minimumDuration || elapsed < audioDuration || !screamAnimationFinished)
+        while (elapsed < requiredDuration || !screamAnimationFinished)
         {
             if (player != null)
             {
@@ -308,10 +310,12 @@ public class ZombieAI : MonoBehaviour
                 hasEnteredScreamState |= currentIsScream || nextIsScream;
 
                 // Chase is allowed only after the scream state has actually played through.
-                screamAnimationFinished = hasEnteredScreamState &&
-                    currentIsScream &&
-                    !zombieAnimator.IsInTransition(0) &&
-                    currentState.normalizedTime >= 1f;
+                if (hasEnteredScreamState)
+                {
+                    bool completedCurrentScream = currentIsScream && currentState.normalizedTime >= 1f;
+                    bool transitionedOutAfterScream = !currentIsScream && !nextIsScream && elapsed >= requiredDuration;
+                    screamAnimationFinished = completedCurrentScream || transitionedOutAfterScream;
+                }
             }
 
             elapsed += Time.deltaTime;
@@ -795,8 +799,37 @@ public class ZombieAI : MonoBehaviour
             return false;
         }
 
-        return Physics.Raycast(eye, toPlayer.normalized, out RaycastHit hit, distance, detectionLayers, QueryTriggerInteraction.Ignore)
-            && (hit.transform == player || hit.transform.IsChildOf(player));
+        Vector3 direction = toPlayer.normalized;
+        float castRadius = Mathf.Max(0.01f, visibilityCastRadius);
+        int hitCount = Physics.SphereCastNonAlloc(eye, castRadius, direction, visibilityHits, distance, detectionLayers, QueryTriggerInteraction.Ignore);
+        if (hitCount == 0)
+        {
+            return false;
+        }
+
+        System.Array.Sort(visibilityHits, 0, hitCount, RaycastHitDistanceComparer.Instance);
+        for (int i = 0; i < hitCount; i++)
+        {
+            Transform hitTransform = visibilityHits[i].transform;
+            if (hitTransform == null || hitTransform == transform || hitTransform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            return hitTransform == player || hitTransform.IsChildOf(player);
+        }
+
+        return false;
+    }
+
+    private sealed class RaycastHitDistanceComparer : System.Collections.Generic.IComparer<RaycastHit>
+    {
+        public static readonly RaycastHitDistanceComparer Instance = new RaycastHitDistanceComparer();
+
+        public int Compare(RaycastHit x, RaycastHit y)
+        {
+            return x.distance.CompareTo(y.distance);
+        }
     }
 
     private void StartStateRoutine(IEnumerator routine)

@@ -10,6 +10,14 @@ public class DeathTransitionUI : MonoBehaviour
     public CanvasGroup blackScreen;
     public TextMeshProUGUI messageText;
 
+    [Header("Respawn Messages")]
+    [TextArea(2, 4)]
+    public string[] respawnMessages =
+    {
+        "WAKE UP...\nIT IS NOT OVER YET",
+        "ONE LAST CHANCE...\nDON'T GIVE UP"
+    };
+
     private void Awake()
     {
         Instance = this;
@@ -22,12 +30,20 @@ public class DeathTransitionUI : MonoBehaviour
 
     public IEnumerator PlaySecondChance()
     {
+        yield return StartCoroutine(PlaySecondChance(2));
+    }
+
+    public IEnumerator PlaySecondChance(int chanceNumber)
+    {
         // DeathScreen starts inactive in the scene, so make it visible before the first fade.
         gameObject.SetActive(true);
         blackScreen.alpha = 0f;
 
         if (messageText != null)
+        {
+            messageText.text = GetRespawnMessage(chanceNumber);
             messageText.alpha = 0f;
+        }
 
         // Fade Black
         while (blackScreen.alpha < 1)
@@ -63,7 +79,10 @@ public class DeathTransitionUI : MonoBehaviour
         }
 
         yield return new WaitForSeconds(4f);
+    }
 
+    public IEnumerator FadeBackToGameplay()
+    {
         // Fade Out Black
         while (blackScreen.alpha > 0)
         {
@@ -78,5 +97,16 @@ public class DeathTransitionUI : MonoBehaviour
 
         // Return the overlay to its initial inactive state so every death starts identically.
         gameObject.SetActive(false);
+    }
+
+    private string GetRespawnMessage(int chanceNumber)
+    {
+        if (respawnMessages == null || respawnMessages.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        int messageIndex = Mathf.Clamp(chanceNumber - 2, 0, respawnMessages.Length - 1);
+        return respawnMessages[messageIndex];
     }
 }
