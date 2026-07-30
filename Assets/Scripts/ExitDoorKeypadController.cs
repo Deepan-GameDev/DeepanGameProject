@@ -8,6 +8,7 @@ public class ExitDoorKeypadController : MonoBehaviour, IInteractable
     public Transform cameraPoint;
     public Keypad keypadComponent;
     public KeypadInteractionController keypadInteractionController;
+    public GameMessageUI gameMessageUI;
 
     [Header("Door Settings")]
     public float openAngle = -90f;
@@ -48,6 +49,14 @@ public class ExitDoorKeypadController : MonoBehaviour, IInteractable
 
         if (unlocked)
             return;
+
+            if (PowerManager.Instance != null && !PowerManager.Instance.PowerOn)
+{
+    if (gameMessageUI != null)
+        gameMessageUI.ShowMessage("POWER REQUIRED");
+
+    return;
+}
 
         keypadInteractionController.EnterKeypad(cameraPoint);
     }

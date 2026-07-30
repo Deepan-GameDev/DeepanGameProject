@@ -25,7 +25,5 @@ public class PowerManager : MonoBehaviour
             if (light != null)
                 light.TurnOn();
         }
-
-        Debug.Log("POWER RESTORED");
     }
 }
