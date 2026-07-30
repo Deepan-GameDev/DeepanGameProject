@@ -9,6 +9,7 @@ public class LockerController : MonoBehaviour, IInteractable
     public GameObject keypad;
     public KeypadInteractionController keypadInteractionController;
     public Keypad keypadComponent;
+    public Transform cameraPoint;
 
     [Header("Settings")]
     public float openAngle = 90f;
@@ -56,7 +57,7 @@ public class LockerController : MonoBehaviour, IInteractable
             return;
 
         if (keypadInteractionController != null)
-            keypadInteractionController.EnterKeypad();
+            keypadInteractionController.EnterKeypad(cameraPoint);
     }
 
     public void OpenLocker()
