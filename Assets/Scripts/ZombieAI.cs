@@ -186,7 +186,7 @@ public class ZombieAI : MonoBehaviour
         }
 
         UpdateMovementAnimation(LocomotionMode.Walk, patrolSpeed);
-        RotateTowards(agent.steeringTarget);
+        RotateTowardsAgentMovement();
 
         if (HasArrived(patrolPointDistance))
         {
@@ -295,8 +295,7 @@ public class ZombieAI : MonoBehaviour
         }
 
         float elapsed = 0f;
-        float audioDuration = screamSound != null ? screamSound.length : 0f;
-        float requiredDuration = Mathf.Max(0f, screamDuration, audioDuration);
+        float requiredDuration = screamDuration;
         bool hasEnteredScreamState = zombieAnimator == null;
         bool screamAnimationFinished = zombieAnimator == null;
 
@@ -380,7 +379,7 @@ public class ZombieAI : MonoBehaviour
 
         TryOpenBlockingDoor();
 
-        RotateTowards(agent.steeringTarget);
+        RotateTowardsAgentMovement();
         UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
 
         Vector3 toPlayer = player.position - transform.position;
@@ -412,7 +411,7 @@ public class ZombieAI : MonoBehaviour
             }
 
             TryOpenBlockingDoor();
-            RotateTowards(agent.steeringTarget);
+            RotateTowardsAgentMovement();
             UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
             yield return null;
         }
@@ -728,6 +727,30 @@ public class ZombieAI : MonoBehaviour
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), turnSpeed * Time.deltaTime);
     }
 
+    private void RotateTowardsAgentMovement()
+    {
+        if (!CanUseAgent()) return;
+
+        Vector3 direction = agent.desiredVelocity;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            direction = agent.velocity;
+            direction.y = 0f;
+        }
+
+        if (direction.sqrMagnitude < 0.0001f && agent.hasPath)
+        {
+            direction = agent.steeringTarget - transform.position;
+            direction.y = 0f;
+        }
+
+        if (direction.sqrMagnitude < 0.0001f) return;
+
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), turnSpeed * Time.deltaTime);
+    }
+
     private void FaceTarget(Vector3 target)
     {
         Vector3 direction = target - transform.position;
@@ -745,13 +768,19 @@ public class ZombieAI : MonoBehaviour
             return;
         }
 
+        Vector3 actualVelocity = agent.velocity;
+        Vector3 desiredVelocity = agent.desiredVelocity;
+        actualVelocity.y = 0f;
+        desiredVelocity.y = 0f;
+
         bool wantsToMove = !agent.isStopped &&
-            (agent.pathPending || agent.hasPath || agent.desiredVelocity.sqrMagnitude > 0.01f) &&
+            (agent.pathPending || agent.hasPath || desiredVelocity.sqrMagnitude > 0.01f || actualVelocity.sqrMagnitude > 0.01f) &&
             !HasArrived(agent.stoppingDistance);
-        float actualSpeed = agent.velocity.magnitude;
-        float desiredSpeed = agent.desiredVelocity.magnitude;
-        float speed = Mathf.Max(actualSpeed, desiredSpeed * 0.35f);
-        float speedRatio = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
+
+        float actualSpeed = actualVelocity.magnitude;
+        float desiredSpeed = desiredVelocity.magnitude;
+        float speed = wantsToMove ? Mathf.Max(actualSpeed, desiredSpeed) : 0f;
+        float speedRatio = referenceSpeed > 0f ? Mathf.Clamp01(speed / referenceSpeed) : 0f;
 
         if (wantsToMove && speedRatio < movingAnimationThreshold)
         {
@@ -798,7 +827,7 @@ public class ZombieAI : MonoBehaviour
             case LocomotionMode.Walk:
                 return Mathf.Lerp(IdleBlendSpeed, WalkBlendSpeed, ratio);
             case LocomotionMode.Run:
-                return ratio > 0f ? RunBlendSpeed : IdleBlendSpeed;
+                return Mathf.Lerp(WalkBlendSpeed, RunBlendSpeed, ratio);
             default:
                 return IdleBlendSpeed;
         }
@@ -821,10 +850,14 @@ public class ZombieAI : MonoBehaviour
         }
 
         Vector3 flatDirection = Vector3.ProjectOnPlane(toPlayer, Vector3.up);
-        if (flatDirection.sqrMagnitude < 0.0001f || Vector3.Angle(transform.forward, flatDirection) > fieldOfView * 0.5f)
-        {
-            return false;
-        }
+
+float angle = Vector3.Angle(transform.forward, flatDirection);
+
+// If player is very close, ignore FOV completely.
+if (distance > 2f && angle > fieldOfView * 0.5f)
+{
+    return false;
+}
 
         Vector3 direction = toPlayer.normalized;
         float castRadius = Mathf.Max(0.01f, visibilityCastRadius);
