@@ -737,7 +737,10 @@ public class ZombieAI : MonoBehaviour
         }
 
         bool wantsToMove = agent.hasPath && !agent.isStopped && !HasArrived(agent.stoppingDistance);
-        float speed = agent.velocity.magnitude;
+        float speed = Mathf.Max(
+    agent.velocity.magnitude,
+    agent.desiredVelocity.magnitude
+);
         float normalizedSpeed = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
 
         if (wantsToMove && normalizedSpeed < movingAnimationThreshold)
