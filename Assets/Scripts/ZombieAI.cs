@@ -17,6 +17,9 @@ public class ZombieAI : MonoBehaviour
 
     private const string ScreamStateName = "Zombie Scream";
     private const string BiteStateName = "Zombie Neck Bite";
+    private const float IdleBlendSpeed = 0f;
+    private const float WalkBlendSpeed = 0.5f;
+    private const float RunBlendSpeed = 1f;
 
     private bool canMove;
 
@@ -273,7 +276,13 @@ public class ZombieAI : MonoBehaviour
     {
         state = ZombieState.Screaming;
         StopAgent(true);
-        SetAnimation(LocomotionMode.Idle, 0f, true);
+        if (player != null)
+        {
+            FaceTarget(player.position);
+            lastKnownPlayerPosition = player.position;
+        }
+
+        SetAnimation(LocomotionMode.Idle, 0f, true, true);
 
         if (zombieAnimator != null)
         {
@@ -336,7 +345,7 @@ public class ZombieAI : MonoBehaviour
         timeSincePlayerSeen = 0f;
         ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
         agent.SetDestination(player.position);
-        UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
+        SetAnimation(LocomotionMode.Run, 1f, false, true);
 
         if (patrolAudioSource != null)
         {
@@ -736,47 +745,62 @@ public class ZombieAI : MonoBehaviour
             return;
         }
 
-        bool wantsToMove = agent.hasPath && !agent.isStopped && !HasArrived(agent.stoppingDistance);
-        float speed = Mathf.Max(
-    agent.velocity.magnitude,
-    agent.desiredVelocity.magnitude
-);
-        float normalizedSpeed = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
+        bool wantsToMove = !agent.isStopped &&
+            (agent.pathPending || agent.hasPath || agent.desiredVelocity.sqrMagnitude > 0.01f) &&
+            !HasArrived(agent.stoppingDistance);
+        float actualSpeed = agent.velocity.magnitude;
+        float desiredSpeed = agent.desiredVelocity.magnitude;
+        float speed = Mathf.Max(actualSpeed, desiredSpeed * 0.35f);
+        float speedRatio = referenceSpeed > 0f ? speed / referenceSpeed : 0f;
 
-        if (wantsToMove && normalizedSpeed < movingAnimationThreshold)
+        if (wantsToMove && speedRatio < movingAnimationThreshold)
         {
-            normalizedSpeed = movingAnimationThreshold;
+            speedRatio = movingAnimationThreshold;
         }
 
-        SetAnimation(wantsToMove ? mode : LocomotionMode.Idle, normalizedSpeed);
+        SetAnimation(wantsToMove ? mode : LocomotionMode.Idle, speedRatio);
     }
 
-    private void SetAnimation(LocomotionMode mode, float normalizedMoveSpeed, bool screaming = false)
+    private void SetAnimation(LocomotionMode mode, float speedRatio, bool screaming = false, bool snapMoveSpeed = false)
     {
         if (zombieAnimator == null) return;
 
-        bool walking = mode == LocomotionMode.Walk;
-        bool running = mode == LocomotionMode.Run;
-
         if (!animationInitialized || currentAnimationMode != mode || currentScreaming != screaming)
         {
-            zombieAnimator.SetBool(IsWalking, walking);
+            // Locomotion is driven exclusively by the MoveSpeed Blend Tree.
+            // Legacy walk/chase bools are forced off so they cannot fight the Blend Tree.
+            zombieAnimator.SetBool(IsWalking, false);
             zombieAnimator.SetBool(IsScreaming, screaming);
-            zombieAnimator.SetBool(IsChasing, running);
+            zombieAnimator.SetBool(IsChasing, false);
 
             currentAnimationMode = mode;
             currentScreaming = screaming;
             animationInitialized = true;
+            snapMoveSpeed = true;
         }
 
-        float moveSpeed = Mathf.Clamp(normalizedMoveSpeed, 0f, 1.25f);
-        if (Time.deltaTime > 0f)
+        float moveSpeed = GetBlendTreeMoveSpeed(mode, speedRatio);
+        if (snapMoveSpeed || Time.deltaTime <= 0f)
         {
-            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, moveSpeedDampTime, Time.deltaTime);
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed);
         }
         else
         {
-            zombieAnimator.SetFloat(MoveSpeed, moveSpeed);
+            zombieAnimator.SetFloat(MoveSpeed, moveSpeed, moveSpeedDampTime, Time.deltaTime);
+        }
+    }
+
+    private float GetBlendTreeMoveSpeed(LocomotionMode mode, float speedRatio)
+    {
+        float ratio = Mathf.Clamp01(speedRatio);
+        switch (mode)
+        {
+            case LocomotionMode.Walk:
+                return Mathf.Lerp(IdleBlendSpeed, WalkBlendSpeed, ratio);
+            case LocomotionMode.Run:
+                return ratio > 0f ? RunBlendSpeed : IdleBlendSpeed;
+            default:
+                return IdleBlendSpeed;
         }
     }
 
