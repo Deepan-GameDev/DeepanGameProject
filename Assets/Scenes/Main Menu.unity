@@ -628,6 +628,7 @@ GameObject:
   - component: {fileID: 97211815}
   - component: {fileID: 97211814}
   - component: {fileID: 97211813}
+  - component: {fileID: 97211816}
   m_Layer: 5
   m_Name: Instagram Button
   m_TagString: Untagged
@@ -749,6 +750,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 97211811}
   m_CullTransparentMesh: 1
+--- !u!114 &97211816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 97211811}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef37f79a5abba3459e640384eca6771, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSound
+  audioSource: {fileID: 493647210}
+  hoverClip: {fileID: 0}
+  clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
 --- !u!1 &202112304
 GameObject:
   m_ObjectHideFlags: 0
@@ -1086,6 +1102,7 @@ GameObject:
   - component: {fileID: 456672235}
   - component: {fileID: 456672234}
   - component: {fileID: 456672233}
+  - component: {fileID: 456672236}
   m_Layer: 5
   m_Name: Medium
   m_TagString: Untagged
@@ -1207,6 +1224,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 456672231}
   m_CullTransparentMesh: 1
+--- !u!114 &456672236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456672231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef37f79a5abba3459e640384eca6771, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSound
+  audioSource: {fileID: 493647210}
+  hoverClip: {fileID: 8300000, guid: fa0a4e39d8579e54c91378c93277069a, type: 3}
+  clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
 --- !u!1 &465870872
 GameObject:
   m_ObjectHideFlags: 0
@@ -3830,6 +3862,7 @@ GameObject:
   - component: {fileID: 1372892889}
   - component: {fileID: 1372892888}
   - component: {fileID: 1372892887}
+  - component: {fileID: 1372892890}
   m_Layer: 5
   m_Name: Back Button
   m_TagString: Untagged
@@ -3951,6 +3984,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1372892885}
   m_CullTransparentMesh: 1
+--- !u!114 &1372892890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1372892885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef37f79a5abba3459e640384eca6771, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSound
+  audioSource: {fileID: 493647210}
+  hoverClip: {fileID: 8300000, guid: fa0a4e39d8579e54c91378c93277069a, type: 3}
+  clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
 --- !u!1 &1410526746
 GameObject:
   m_ObjectHideFlags: 0
@@ -4074,6 +4122,7 @@ GameObject:
   - component: {fileID: 1673017263}
   - component: {fileID: 1673017262}
   - component: {fileID: 1673017261}
+  - component: {fileID: 1673017264}
   m_Layer: 5
   m_Name: High
   m_TagString: Untagged
@@ -4195,6 +4244,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673017259}
   m_CullTransparentMesh: 1
+--- !u!114 &1673017264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1673017259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef37f79a5abba3459e640384eca6771, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSound
+  audioSource: {fileID: 493647210}
+  hoverClip: {fileID: 8300000, guid: fa0a4e39d8579e54c91378c93277069a, type: 3}
+  clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
 --- !u!1 &1734545400
 GameObject:
   m_ObjectHideFlags: 0
@@ -4843,6 +4907,7 @@ GameObject:
   - component: {fileID: 2051933015}
   - component: {fileID: 2051933014}
   - component: {fileID: 2051933016}
+  - component: {fileID: 2051933017}
   m_Layer: 5
   m_Name: TapToContinue
   m_TagString: Untagged
@@ -4919,6 +4984,21 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &2051933017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051933012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef37f79a5abba3459e640384eca6771, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSound
+  audioSource: {fileID: 493647210}
+  hoverClip: {fileID: 0}
+  clickClip: {fileID: 8300000, guid: 54345a7509cec6a4da06024b85985433, type: 3}
 --- !u!1 &2059458741
 GameObject:
   m_ObjectHideFlags: 0
@@ -5310,6 +5390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ContinueButton
   continueButton: {fileID: 2120826455}
+  sceneToLoad: level 1
 --- !u!1 &2123989773
 GameObject:
   m_ObjectHideFlags: 0

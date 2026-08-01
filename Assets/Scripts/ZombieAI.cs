@@ -532,6 +532,15 @@ public class ZombieAI : MonoBehaviour
         playerDead = true;
 
         StopAgent(true);
+
+        Vector3 direction = transform.position - player.position;
+direction.y = 0f;
+
+if (direction.sqrMagnitude > 0.01f)
+{
+    player.rotation = Quaternion.LookRotation(direction);
+}
+
         FaceTarget(player.position);
         SetAnimation(LocomotionMode.Idle, 0f);
         PlayAttackEffect();
