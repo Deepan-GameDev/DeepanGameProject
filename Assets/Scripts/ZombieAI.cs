@@ -334,23 +334,22 @@ public class ZombieAI : MonoBehaviour
     }
 
     private void StartChase()
-    {
-        if (player == null || playerDead)
-        {
-            return;
-        }
+{
+    if (player == null || playerDead)
+        return;
 
-        state = ZombieState.Chase;
-        timeSincePlayerSeen = 0f;
-        ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
-        agent.SetDestination(player.position);
-        SetAnimation(LocomotionMode.Run, 1f, false, true);
+    state = ZombieState.Chase;
 
-        if (patrolAudioSource != null)
-        {
-            patrolAudioSource.Stop();
-        }
-    }
+    zombieAnimator.Play("Movement", 0, 0f);   // <-- Add this
+
+    timeSincePlayerSeen = 0f;
+
+    ConfigureAgent(chaseSpeed, chaseAcceleration, killDistance);
+
+    agent.SetDestination(player.position);
+
+    UpdateMovementAnimation(LocomotionMode.Run, chaseSpeed);
+}
 
     private void UpdateChase()
     {
