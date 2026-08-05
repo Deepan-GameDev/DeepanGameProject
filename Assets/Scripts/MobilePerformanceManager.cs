@@ -2,17 +2,10 @@ using UnityEngine;
 
 public class MobilePerformanceManager : MonoBehaviour
 {
-    [Header("Performance")]
-    [SerializeField] private int targetFPS = 60;
-    [SerializeField] private bool disableVSync = true;
-
     private void Awake()
     {
-        if (disableVSync)
-            QualitySettings.vSyncCount = 0;
-
-        Application.targetFrameRate = targetFPS;
-
-        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        // AdaptivePerformanceManager is created before the first scene and owns
+        // frame pacing. This legacy component remains harmless for existing scenes.
+        enabled = false;
     }
 }

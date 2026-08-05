@@ -121,6 +121,13 @@ public class ZombieAI : MonoBehaviour
         if (zombieAnimator == null)
             zombieAnimator = GetComponent<Animator>();
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Keep animator state advancing for gameplay while avoiding bone-transform
+        // work for zombies outside every camera's view.
+        if (zombieAnimator != null)
+            zombieAnimator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
+#endif
+
         agent.updateRotation = false;
         agent.autoBraking = true;
     }
