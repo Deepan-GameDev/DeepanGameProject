@@ -3,52 +3,24 @@ using UnityEngine;
 [RequireComponent(typeof(RectTransform))]
 public class SafeArea : MonoBehaviour
 {
-    private RectTransform panel;
-
-    private Rect lastSafeArea = new Rect(0, 0, 0, 0);
-    private ScreenOrientation lastOrientation = ScreenOrientation.AutoRotation;
-    private Vector2Int lastResolution = Vector2Int.zero;
-
-    private void Awake()
-    {
-        panel = GetComponent<RectTransform>();
-        ApplySafeArea();
-    }
-
     private void OnEnable()
     {
-        ApplySafeArea();
+        SafeAreaManager.Register(this);
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        if (Screen.safeArea != lastSafeArea ||
-            Screen.orientation != lastOrientation ||
-            lastResolution.x != Screen.width ||
-            lastResolution.y != Screen.height)
-        {
-            ApplySafeArea();
-        }
+        SafeAreaManager.Unregister(this);
     }
 
-    private void ApplySafeArea()
+    internal void Apply(Rect safeArea)
     {
-        lastSafeArea = Screen.safeArea;
-        lastOrientation = Screen.orientation;
-        lastResolution = new Vector2Int(Screen.width, Screen.height);
+        RectTransform panel = (RectTransform)transform;
+        float width = Mathf.Max(Screen.width, 1);
+        float height = Mathf.Max(Screen.height, 1);
 
-        Vector2 anchorMin = lastSafeArea.position;
-        Vector2 anchorMax = lastSafeArea.position + lastSafeArea.size;
-
-        anchorMin.x /= Screen.width;
-        anchorMin.y /= Screen.height;
-
-        anchorMax.x /= Screen.width;
-        anchorMax.y /= Screen.height;
-
-        panel.anchorMin = anchorMin;
-        panel.anchorMax = anchorMax;
-
+        panel.anchorMin = new Vector2(safeArea.xMin / width, safeArea.yMin / height);
+        panel.anchorMax = new Vector2(safeArea.xMax / width, safeArea.yMax / height);
         panel.offsetMin = Vector2.zero;
         panel.offsetMax = Vector2.zero;
     }
