@@ -901,7 +901,6 @@ public class Player : MonoBehaviour
             Collider hit = standCheckHits[i];
             if (hit != null && !IsOwnCollider(hit))
             {
-                Debug.Log("Can't Stand Because Of : " + hit.name);
                 return false;
             }
         }
