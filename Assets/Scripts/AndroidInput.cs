@@ -16,13 +16,8 @@ public class AndroidInput : MonoBehaviour
         player.ToggleRun();
     }
 
-    public void CrouchDown()
-    {
-        player.SetCrouch(true);
-    }
-
-    public void CrouchUp()
-    {
-        player.SetCrouch(false);
-    }
+public void ToggleCrouch()
+{
+    player.ToggleCrouch();
+}
 }

@@ -130,15 +130,23 @@ public class Player : MonoBehaviour
         runPressed = !runPressed;
     }
 
-    public void SetCrouch(bool value)
-    {
-        if (inputLocked)
-        {
-            return;
-        }
+    public void ToggleCrouch()
+{
+    if (inputLocked)
+        return;
 
-        crouchPressed = value;
+    // Standing -> Crouch
+    // Crouch -> Stand (only if there is enough headroom)
+    if (crouchPressed)
+    {
+        if (CanStandUp())
+            crouchPressed = false;
     }
+    else
+    {
+        crouchPressed = true;
+    }
+}
 
     private void SetInputLocked(bool locked)
     {
@@ -882,8 +890,9 @@ public class Player : MonoBehaviour
             return true;
         }
 
-        float radius = Mathf.Max(0.01f, bodyRadius - collisionSkinWidth);
+        float radius = Mathf.Max(0.01f, bodyRadius - collisionSkinWidth - 0.02f);
         Vector3 bottom = rb.position + Vector3.up * radius;
+        float standHeight = standingHeight - 0.05f;
         Vector3 top = rb.position + Vector3.up * (standingHeight - radius);
         int hitCount = Physics.OverlapCapsuleNonAlloc(bottom, top, radius, standCheckHits, groundLayers, QueryTriggerInteraction.Ignore);
 
@@ -892,6 +901,7 @@ public class Player : MonoBehaviour
             Collider hit = standCheckHits[i];
             if (hit != null && !IsOwnCollider(hit))
             {
+                Debug.Log("Can't Stand Because Of : " + hit.name);
                 return false;
             }
         }

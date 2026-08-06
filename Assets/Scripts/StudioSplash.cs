@@ -1,59 +1,61 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections;
 
 public class StudioSplash : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private CanvasGroup canvasGroup;
 
-    [SerializeField] private float fadeInDuration = 1.5f;
-    [SerializeField] private float displayDuration = 2.5f;
-    [SerializeField] private float fadeOutDuration = 1.5f;
+    [Header("Timing")]
+    [SerializeField] private float fadeInTime = 1.5f;
+    [SerializeField] private float holdTime = 2f;
+    [SerializeField] private float fadeOutTime = 1.5f;
 
-    [SerializeField] private string nextSceneName = "MainMenu";
+    [Header("Scene")]
+    [SerializeField] private string nextScene = "MainMenu";
+
+    private void Awake()
+    {
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        canvasGroup.alpha = 0f;
+    }
 
     private void Start()
     {
-        StartCoroutine(PlaySplash());
+        StartCoroutine(SplashRoutine());
     }
 
-    private IEnumerator PlaySplash()
+    private IEnumerator SplashRoutine()
     {
-        canvasGroup.alpha = 0f;
-
         // Fade In
-        float time = 0f;
+        yield return StartCoroutine(Fade(0f, 1f, fadeInTime));
 
-        while (time < fadeInDuration)
-        {
-            time += Time.deltaTime;
-
-            canvasGroup.alpha =
-                Mathf.Clamp01(time / fadeInDuration);
-
-            yield return null;
-        }
-
-        canvasGroup.alpha = 1f;
-
-        // Wait
-        yield return new WaitForSeconds(displayDuration);
+        // Hold
+        yield return new WaitForSecondsRealtime(holdTime);
 
         // Fade Out
-        time = 0f;
+        yield return StartCoroutine(Fade(1f, 0f, fadeOutTime));
 
-        while (time < fadeOutDuration)
+        // Load Scene
+        SceneManager.LoadScene(nextScene);
+    }
+
+    private IEnumerator Fade(float start, float end, float duration)
+    {
+        float time = 0f;
+
+        while (time < duration)
         {
-            time += Time.deltaTime;
+            time += Time.unscaledDeltaTime;
 
-            canvasGroup.alpha =
-                1f - Mathf.Clamp01(time / fadeOutDuration);
+            canvasGroup.alpha = Mathf.Lerp(start, end, time / duration);
 
             yield return null;
         }
 
-        canvasGroup.alpha = 0f;
-
-        SceneManager.LoadScene(nextSceneName);
+        canvasGroup.alpha = end;
     }
 }
