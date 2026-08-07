@@ -21,7 +21,10 @@ public class PlayerNoise : MonoBehaviour
         if (player == null || zombie == null)
             return;
 
-        if (!player.GetIsMoving())
+        // Player.UpdateFootsteps already treats crouching as silent. Keep the
+        // AI hearing emitter consistent with it so crouch movement creates no
+        // investigation events. Vision remains entirely in ZombieAI.
+        if (!player.GetIsMoving() || player.GetIsCrouching())
         {
             timer = 0f;
             return;

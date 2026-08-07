@@ -93,6 +93,15 @@ public class ZombieAI : MonoBehaviour
     [Header("Patrol Sound")]
     [SerializeField] private AudioSource patrolAudioSource;
 
+    [Header("Footsteps")]
+    [SerializeField] private AudioSource footstepAudioSource;
+    [SerializeField] private AudioClip[] footstepClips;
+    [SerializeField, Range(0f, 1f)] private float footstepVolume = 0.72f;
+    [SerializeField] private Vector2 footstepPitchRange = new Vector2(0.92f, 1.06f);
+    [SerializeField] private float footstepMinDistance = 1.5f;
+    [SerializeField] private float footstepMaxDistance = 18f;
+    [SerializeField] private float minimumFootstepInterval = 0.1f;
+
     private NavMeshAgent agent;
     private ZombieState state;
     private Coroutine stateRoutine;
@@ -110,6 +119,7 @@ public class ZombieAI : MonoBehaviour
     private LocomotionMode currentAnimationMode;
     private bool currentScreaming;
     private bool animationInitialized;
+    private float lastFootstepTime = float.NegativeInfinity;
 
     private void Awake()
     {
@@ -130,6 +140,8 @@ public class ZombieAI : MonoBehaviour
 
         agent.updateRotation = false;
         agent.autoBraking = true;
+
+        ConfigureFootstepAudioSource();
     }
 
     private void Start()
@@ -276,6 +288,7 @@ public class ZombieAI : MonoBehaviour
             return;
         }
 
+        StopFootsteps();
         StartStateRoutine(ScreamRoutine());
     }
 
@@ -538,6 +551,7 @@ public class ZombieAI : MonoBehaviour
         isAttacking = true;
         playerDead = true;
 
+        StopFootsteps();
         StopAgent(true);
 
         Vector3 direction = transform.position - player.position;
@@ -612,6 +626,60 @@ if (direction.sqrMagnitude > 0.01f)
         if (attackAudioSource != null && biteClip != null)
         {
             attackAudioSource.PlayOneShot(biteClip);
+        }
+    }
+
+    // Called only by events on the walk and run animation clips.
+    // Keeping this event-driven prevents Update-based audio polling and keeps
+    // each sound on a foot plant rather than on an arbitrary time interval.
+    public void ZombieFootstep()
+    {
+        if (!CanPlayFootstep() || Time.time - lastFootstepTime < minimumFootstepInterval)
+        {
+            return;
+        }
+
+        int clipIndex = Random.Range(0, footstepClips.Length);
+        footstepAudioSource.pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
+        footstepAudioSource.PlayOneShot(footstepClips[clipIndex], footstepVolume);
+        lastFootstepTime = Time.time;
+    }
+
+    private bool CanPlayFootstep()
+    {
+        if (footstepAudioSource == null || footstepClips == null || footstepClips.Length == 0 ||
+            state == ZombieState.Screaming || state == ZombieState.Attacking || state == ZombieState.Dead ||
+            playerDead || isAttacking || !canMove || !CanUseAgent() || agent.isStopped)
+        {
+            return false;
+        }
+
+        return agent.velocity.sqrMagnitude > movingAnimationThreshold * movingAnimationThreshold;
+    }
+
+    private void ConfigureFootstepAudioSource()
+    {
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        footstepAudioSource.playOnAwake = false;
+        footstepAudioSource.loop = false;
+        footstepAudioSource.volume = 1f;
+        footstepAudioSource.priority = 128;
+        footstepAudioSource.spatialBlend = 1f;
+        footstepAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        footstepAudioSource.minDistance = footstepMinDistance;
+        footstepAudioSource.maxDistance = footstepMaxDistance;
+        footstepAudioSource.dopplerLevel = 0f;
+    }
+
+    private void StopFootsteps()
+    {
+        if (footstepAudioSource != null)
+        {
+            footstepAudioSource.Stop();
         }
     }
 
@@ -981,6 +1049,8 @@ if (distance > 2f && angle > fieldOfView * 0.5f)
         if (zombieAudioSource != null)
             zombieAudioSource.Stop();
 
+        StopFootsteps();
+
         if (attackAudioSource != null)
             attackAudioSource.Stop();
 
@@ -991,6 +1061,7 @@ if (distance > 2f && angle > fieldOfView * 0.5f)
         isAttacking = false;
         canMove = false;
         state = ZombieState.Idle;
+        lastFootstepTime = float.NegativeInfinity;
 
         lastKnownPlayerPosition = Vector3.zero;
         lastHeardPosition = Vector3.zero;
