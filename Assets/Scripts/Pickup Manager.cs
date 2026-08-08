@@ -33,10 +33,28 @@ public class PickupManager : MonoBehaviour
 
     private void SetCurrentPickup(IPickup pickup)
     {
-        currentPickup = pickup;
+        if (currentPickup != pickup)
+        {
+            SetPickupBlink(currentPickup, false);
+            currentPickup = pickup;
+            SetPickupBlink(currentPickup, true);
+        }
 
         if (pickupButton != null)
             pickupButton.gameObject.SetActive(currentPickup != null);
+    }
+
+    private void SetPickupBlink(IPickup pickup, bool shouldBlink)
+    {
+        MonoBehaviour pickupComponent = pickup as MonoBehaviour;
+
+        if (pickupComponent == null)
+            return;
+
+        PickupBlink blink = pickupComponent.GetComponentInParent<PickupBlink>();
+
+        if (blink != null)
+            blink.SetBlink(shouldBlink);
     }
     private void Start()
 {

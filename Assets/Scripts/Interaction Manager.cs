@@ -34,12 +34,53 @@ public class InteractionManager : MonoBehaviour
         currentInteractable?.Interact();
     }
 
-    private void SetCurrentInteractable(IInteractable interactable)
+   private void SetCurrentInteractable(IInteractable interactable)
 {
+    // If the target has not changed, do nothing.
+    // This is important because Update() calls this every frame.
+    if (currentInteractable == interactable)
+        return;
+
+    // Stop blinking on previous Note
+    if (currentInteractable != null)
+    {
+        MonoBehaviour previousObject = currentInteractable as MonoBehaviour;
+
+        if (previousObject != null)
+        {
+            NoteBlink previousNote =
+                previousObject.GetComponentInParent<NoteBlink>();
+
+            if (previousNote != null)
+            {
+                previousNote.SetBlink(false);
+            }
+        }
+    }
+
+    // Set new interactable
     currentInteractable = interactable;
 
     bool hasInteractable = currentInteractable != null;
 
+    // Start blinking only for Note objects
+    if (currentInteractable != null)
+    {
+        MonoBehaviour newObject = currentInteractable as MonoBehaviour;
+
+        if (newObject != null)
+        {
+            NoteBlink newNote =
+                newObject.GetComponentInParent<NoteBlink>();
+
+            if (newNote != null)
+            {
+                newNote.SetBlink(true);
+            }
+        }
+    }
+
+    // Existing UI behaviour
     if (interactButton != null)
     {
         interactButton.gameObject.SetActive(hasInteractable);
@@ -50,7 +91,6 @@ public class InteractionManager : MonoBehaviour
         centerDot.SetInteracting(hasInteractable);
     }
 }
-
     private IInteractable FindInteractable(Ray ray)
     {
         RaycastHit[] hits = Physics.SphereCastAll(ray, interactRadius, interactDistance, ~0, QueryTriggerInteraction.Ignore);
