@@ -1031,6 +1031,56 @@ if (distance > 2f && angle > fieldOfView * 0.5f)
         }
     }
     
+    public void PrepareForEndingCutscene()
+{
+    // Stop all current AI routines
+    if (stateRoutine != null)
+    {
+        StopCoroutine(stateRoutine);
+        stateRoutine = null;
+    }
+
+    // Stop sounds
+    StopFootsteps();
+
+    if (zombieAudioSource != null)
+        zombieAudioSource.Stop();
+
+    if (patrolAudioSource != null)
+        patrolAudioSource.Stop();
+
+    if (attackAudioSource != null)
+        attackAudioSource.Stop();
+
+    // Stop AI movement
+    canMove = false;
+    playerDead = false;
+    isAttacking = false;
+
+    state = ZombieState.Screaming;
+
+    // Stop NavMesh movement
+    if (agent != null && agent.enabled)
+    {
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            agent.ResetPath();
+        }
+
+        agent.enabled = false;
+    }
+
+    // Reset animation parameters
+    if (zombieAnimator != null)
+    {
+        zombieAnimator.SetBool(IsWalking, false);
+        zombieAnimator.SetBool(IsChasing, false);
+        zombieAnimator.SetBool(IsScreaming, false);
+        zombieAnimator.SetFloat(MoveSpeed, 0f);
+    }
+}
 
     public void ResetZombie()
     {

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class BoatEscape : MonoBehaviour, IInteractable
@@ -26,29 +25,31 @@ public class BoatEscape : MonoBehaviour, IInteractable
     [Header("Fade")]
     public float fadeDuration = 2f;
 
+    [Header("Ending Cutscene")]
+    [SerializeField] private EndingCutsceneManager endingCutscene;
+
     private bool hasEscaped;
     private bool isMoving;
 
     public void Interact()
-{
-    if (hasEscaped)
-        return;
-
-    if (playerInventory == null || !playerInventory.HasBoatKey())
     {
-        if (gameMessageUI != null)
+        if (hasEscaped)
+            return;
+
+        if (playerInventory == null || !playerInventory.HasBoatKey())
         {
-            gameMessageUI.ShowMessage("BOAT KEY REQUIRED");
+            if (gameMessageUI != null)
+            {
+                gameMessageUI.ShowMessage("BOAT KEY REQUIRED");
+            }
+
+            return;
         }
 
-        return;
+        hasEscaped = true;
+
+        StartCoroutine(StartEscape());
     }
-
-    hasEscaped = true;
-
-
-    StartCoroutine(StartEscape());
-}
 
     private IEnumerator StartEscape()
     {
@@ -57,6 +58,7 @@ public class BoatEscape : MonoBehaviour, IInteractable
             gameMessageUI.ShowMessage("ESCAPING...");
         }
 
+        // Disable player
         if (player != null)
         {
             player.enabled = false;
@@ -73,16 +75,19 @@ public class BoatEscape : MonoBehaviour, IInteractable
             player.transform.SetParent(transform);
         }
 
+        // Hide gameplay UI
         if (gameplayUI != null)
         {
             gameplayUI.SetActive(false);
         }
 
+        // Boat sound
         if (boatAudioSource != null && boatStartSound != null)
         {
             boatAudioSource.PlayOneShot(boatStartSound);
         }
 
+        // Switch camera
         if (playerCamera != null)
         {
             playerCamera.gameObject.SetActive(false);
@@ -95,15 +100,23 @@ public class BoatEscape : MonoBehaviour, IInteractable
 
         yield return new WaitForSeconds(1f);
 
+        // Start boat movement
         isMoving = true;
 
         yield return new WaitForSeconds(escapeDuration);
 
+        // Stop boat
         isMoving = false;
 
+        // Existing YOU ESCAPED UI
         yield return StartCoroutine(FadeEscapePanel());
 
-        Time.timeScale = 0f;
+        // The existing escape panel remains visible while the dedicated ending
+        // controller begins the immediate camera transition.
+        if (endingCutscene != null)
+        {
+            endingCutscene.Begin(escapeCamera, escapeCanvasGroup);
+        }
     }
 
     private void Update()
@@ -112,7 +125,9 @@ public class BoatEscape : MonoBehaviour, IInteractable
             return;
 
         transform.position +=
-            transform.forward * boatSpeed * Time.deltaTime;
+            transform.forward *
+            boatSpeed *
+            Time.deltaTime;
     }
 
     private IEnumerator FadeEscapePanel()
@@ -147,8 +162,8 @@ public class BoatEscape : MonoBehaviour, IInteractable
     {
         Time.timeScale = 1f;
 
-        SceneManager.LoadScene(
-            SceneManager.GetActiveScene().buildIndex
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
         );
     }
 }
