@@ -27,7 +27,7 @@ Material:
   - DepthOnly
   - SHADOWCASTER
   - MOTIONVECTORS
-  m_LockedProperties: 
+  m_LockedProperties: _Color _MainTex
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
