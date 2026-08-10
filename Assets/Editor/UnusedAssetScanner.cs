@@ -2,15 +2,19 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 public class UnusedAssetScanner : EditorWindow
 {
     private Vector2 scroll;
-    private List<string> unusedAssets = new List<string>();
-    private bool isScanning;
+
+    private List<string> safeUnused = new List<string>();
+    private List<string> prefabOnly = new List<string>();
+    private List<string> sceneOnly = new List<string>();
+
+    private bool scanning;
 
     [MenuItem("Tools/Unused Asset Scanner")]
     public static void OpenWindow()
@@ -20,15 +24,19 @@ public class UnusedAssetScanner : EditorWindow
 
     private void OnGUI()
     {
-        GUILayout.Label("Unused Asset Scanner", EditorStyles.boldLabel);
+        GUILayout.Label(
+            "Unused Asset Scanner",
+            EditorStyles.boldLabel
+        );
 
         EditorGUILayout.HelpBox(
-            "Scans Build Settings scenes and Resources and finds assets that are not referenced by them. " +
-            "Results are POTENTIALLY unused assets. Do not blindly delete runtime-loaded assets.",
+            "Scans ALL scenes, Resources and Prefabs. " +
+            "Assets with no detected references are marked as POTENTIALLY UNUSED. " +
+            "Runtime-loaded assets may still require manual verification.",
             MessageType.Info
         );
 
-        GUILayout.Space(10);
+        GUILayout.Space(8);
 
         if (GUILayout.Button("SCAN PROJECT", GUILayout.Height(40)))
         {
@@ -37,161 +45,300 @@ public class UnusedAssetScanner : EditorWindow
 
         GUILayout.Space(10);
 
-        if (unusedAssets.Count > 0)
+        if (scanning)
         {
-            GUILayout.Label(
-                "Potentially Unused Assets: " + unusedAssets.Count,
-                EditorStyles.boldLabel
+            EditorGUILayout.HelpBox(
+                "Scanning project... Please wait.",
+                MessageType.Info
             );
 
-            if (GUILayout.Button("Export Report"))
-            {
-                ExportReport();
-            }
-
-            GUILayout.Space(5);
-
-            scroll = EditorGUILayout.BeginScrollView(scroll);
-
-            foreach (string asset in unusedAssets)
-            {
-                EditorGUILayout.BeginHorizontal();
-
-                if (GUILayout.Button(asset, EditorStyles.label))
-                {
-                    Object obj = AssetDatabase.LoadAssetAtPath<Object>(asset);
-
-                    if (obj != null)
-                    {
-                        Selection.activeObject = obj;
-                        EditorGUIUtility.PingObject(obj);
-                    }
-                }
-
-                EditorGUILayout.EndHorizontal();
-            }
-
-            EditorGUILayout.EndScrollView();
+            return;
         }
-        else
+
+        if (safeUnused.Count == 0 &&
+            prefabOnly.Count == 0 &&
+            sceneOnly.Count == 0)
         {
             GUILayout.Label(
                 "No scan performed yet.",
                 EditorStyles.centeredGreyMiniLabel
             );
+
+            return;
+        }
+
+        GUILayout.Label(
+            "RESULTS",
+            EditorStyles.boldLabel
+        );
+
+        GUILayout.Label(
+            "Potentially Safe Unused: " + safeUnused.Count,
+            EditorStyles.boldLabel
+        );
+
+        GUILayout.Label(
+            "Prefab-Only References: " + prefabOnly.Count
+        );
+
+        GUILayout.Label(
+            "Scene-Only References: " + sceneOnly.Count
+        );
+
+        GUILayout.Space(8);
+
+        if (GUILayout.Button("Export Full Report"))
+        {
+            ExportReport();
+        }
+
+        GUILayout.Space(10);
+
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+
+        DrawSection(
+            "POTENTIALLY UNUSED",
+            safeUnused
+        );
+
+        DrawSection(
+            "PREFAB-ONLY REFERENCES",
+            prefabOnly
+        );
+
+        DrawSection(
+            "SCENE-ONLY REFERENCES",
+            sceneOnly
+        );
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawSection(
+        string title,
+        List<string> list)
+    {
+        GUILayout.Space(10);
+
+        GUILayout.Label(
+            title + " (" + list.Count + ")",
+            EditorStyles.boldLabel
+        );
+
+        foreach (string path in list)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button(
+                path,
+                EditorStyles.label))
+            {
+                Object obj =
+                    AssetDatabase.LoadAssetAtPath<Object>(path);
+
+                if (obj != null)
+                {
+                    Selection.activeObject = obj;
+                    EditorGUIUtility.PingObject(obj);
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
     }
 
     private void ScanProject()
     {
-        isScanning = true;
-        unusedAssets.Clear();
+        scanning = true;
+
+        safeUnused.Clear();
+        prefabOnly.Clear();
+        sceneOnly.Clear();
 
         try
         {
-            HashSet<string> usedAssets = new HashSet<string>();
+            HashSet<string> sceneReferences =
+                new HashSet<string>();
 
-            // -----------------------------------------
-            // 1. Scan scenes included in Build Settings
-            // -----------------------------------------
+            HashSet<string> prefabReferences =
+                new HashSet<string>();
 
-            EditorBuildSettingsScene[] buildScenes =
-                EditorBuildSettings.scenes;
+            HashSet<string> resourceReferences =
+                new HashSet<string>();
 
-            foreach (EditorBuildSettingsScene buildScene in buildScenes)
+            string[] allAssets =
+                AssetDatabase.GetAllAssetPaths();
+
+            // =====================================================
+            // 1. SCAN ALL SCENES
+            // =====================================================
+
+            string[] scenes =
+                allAssets
+                    .Where(p =>
+                        p.StartsWith("Assets/") &&
+                        p.EndsWith(".unity"))
+                    .ToArray();
+
+            foreach (string scene in scenes)
             {
-                if (!buildScene.enabled)
+                AddDependencies(
+                    scene,
+                    sceneReferences
+                );
+            }
+
+            // =====================================================
+            // 2. SCAN ALL RESOURCES AS ROOTS
+            // =====================================================
+
+            foreach (string asset in allAssets)
+            {
+                if (!asset.StartsWith("Assets/"))
                     continue;
 
-                string scenePath = buildScene.path;
-
-                if (!string.IsNullOrEmpty(scenePath))
+                if (asset.Contains("/Resources/"))
                 {
-                    AddDependencies(scenePath, usedAssets);
+                    AddDependencies(
+                        asset,
+                        resourceReferences
+                    );
                 }
             }
 
-            // -----------------------------------------
-            // 2. Scan Resources folders
-            // -----------------------------------------
+            // =====================================================
+            // 3. SCAN ALL PREFABS
+            // =====================================================
 
-            string[] allAssets = AssetDatabase.GetAllAssetPaths();
+            string[] prefabs =
+                allAssets
+                    .Where(p =>
+                        p.StartsWith("Assets/") &&
+                        p.EndsWith(".prefab"))
+                    .ToArray();
 
-            foreach (string path in allAssets)
+            foreach (string prefab in prefabs)
             {
-                if (!path.StartsWith("Assets/"))
+                AddDependencies(
+                    prefab,
+                    prefabReferences
+                );
+            }
+
+            // =====================================================
+            // 4. CLASSIFY PROJECT ASSETS
+            // =====================================================
+
+            foreach (string asset in allAssets)
+            {
+                if (!asset.StartsWith("Assets/"))
                     continue;
 
-                if (path.Contains("/Resources/"))
+                if (AssetDatabase.IsValidFolder(asset))
+                    continue;
+
+                if (asset.EndsWith(".meta"))
+                    continue;
+
+                // Never touch editor tools
+                if (asset.Contains("/Editor/"))
+                    continue;
+
+                // Never classify Packages
+                if (asset.StartsWith("Packages/"))
+                    continue;
+
+                // Never classify package/plugin infrastructure
+                if (asset.StartsWith("Assets/Plugins/"))
+                    continue;
+
+                // Never classify this scanner
+                if (asset.Contains("UnusedAssetScanner.cs"))
+                    continue;
+
+                bool usedByScene =
+                    sceneReferences.Contains(asset);
+
+                bool usedByPrefab =
+                    prefabReferences.Contains(asset);
+
+                bool usedByResources =
+                    resourceReferences.Contains(asset);
+
+                // -------------------------------------------------
+                // Completely unreferenced
+                // -------------------------------------------------
+
+                if (!usedByScene &&
+                    !usedByPrefab &&
+                    !usedByResources)
                 {
-                    AddDependencies(path, usedAssets);
+                    safeUnused.Add(asset);
+                    continue;
+                }
+
+                // -------------------------------------------------
+                // Prefab-only
+                // -------------------------------------------------
+
+                if (!usedByScene &&
+                    usedByPrefab)
+                {
+                    prefabOnly.Add(asset);
+                    continue;
+                }
+
+                // -------------------------------------------------
+                // Scene-only
+                // -------------------------------------------------
+
+                if (usedByScene &&
+                    !usedByPrefab)
+                {
+                    sceneOnly.Add(asset);
                 }
             }
 
-            // -----------------------------------------
-            // 3. Get all project assets
-            // -----------------------------------------
-
-            foreach (string path in allAssets)
-            {
-                if (!path.StartsWith("Assets/"))
-                    continue;
-
-                if (AssetDatabase.IsValidFolder(path))
-                    continue;
-
-                // Ignore Unity generated metadata
-                if (path.EndsWith(".meta"))
-                    continue;
-
-                // Ignore this scanner itself
-                if (path.Contains("/Editor/"))
-                    continue;
-
-                // Ignore obvious editor-only assets
-                if (path.StartsWith("Assets/Plugins/"))
-                    continue;
-
-                // Ignore Packages
-                if (path.StartsWith("Packages/"))
-                    continue;
-
-                if (!usedAssets.Contains(path))
-                {
-                    unusedAssets.Add(path);
-                }
-            }
-
-            unusedAssets.Sort();
+            safeUnused.Sort();
+            prefabOnly.Sort();
+            sceneOnly.Sort();
 
             Debug.Log(
-                "[Unused Asset Scanner] Scan complete. Potentially unused assets: "
-                + unusedAssets.Count
+                "[Unused Asset Scanner] Complete\n" +
+                "Potentially unused: " +
+                safeUnused.Count +
+                "\nPrefab-only: " +
+                prefabOnly.Count +
+                "\nScene-only: " +
+                sceneOnly.Count
             );
         }
         finally
         {
-            isScanning = false;
+            scanning = false;
         }
 
         Repaint();
     }
 
     private void AddDependencies(
-        string assetPath,
-        HashSet<string> usedAssets)
+        string rootAsset,
+        HashSet<string> target)
     {
-        if (string.IsNullOrEmpty(assetPath))
+        if (string.IsNullOrEmpty(rootAsset))
             return;
 
         string[] dependencies =
-            AssetDatabase.GetDependencies(assetPath, true);
+            AssetDatabase.GetDependencies(
+                rootAsset,
+                true
+            );
 
         foreach (string dependency in dependencies)
         {
             if (dependency.StartsWith("Assets/"))
             {
-                usedAssets.Add(dependency);
+                target.Add(dependency);
             }
         }
     }
@@ -205,30 +352,79 @@ public class UnusedAssetScanner : EditorWindow
                new StreamWriter(reportPath))
         {
             writer.WriteLine(
-                "POTENTIALLY UNUSED ASSETS"
+                "UNUSED ASSET SCANNER REPORT"
             );
 
             writer.WriteLine(
-                "Generated: " + System.DateTime.Now
-            );
-
-            writer.WriteLine(
-                "Total: " + unusedAssets.Count
+                "Generated: " +
+                System.DateTime.Now
             );
 
             writer.WriteLine();
-            writer.WriteLine("--------------------------------");
 
-            foreach (string asset in unusedAssets)
+            writer.WriteLine(
+                "========================================"
+            );
+
+            writer.WriteLine(
+                "POTENTIALLY UNUSED: " +
+                safeUnused.Count
+            );
+
+            writer.WriteLine(
+                "========================================"
+            );
+
+            foreach (string path in safeUnused)
             {
-                writer.WriteLine(asset);
+                writer.WriteLine(path);
+            }
+
+            writer.WriteLine();
+
+            writer.WriteLine(
+                "========================================"
+            );
+
+            writer.WriteLine(
+                "PREFAB ONLY: " +
+                prefabOnly.Count
+            );
+
+            writer.WriteLine(
+                "========================================"
+            );
+
+            foreach (string path in prefabOnly)
+            {
+                writer.WriteLine(path);
+            }
+
+            writer.WriteLine();
+
+            writer.WriteLine(
+                "========================================"
+            );
+
+            writer.WriteLine(
+                "SCENE ONLY: " +
+                sceneOnly.Count
+            );
+
+            writer.WriteLine(
+                "========================================"
+            );
+
+            foreach (string path in sceneOnly)
+            {
+                writer.WriteLine(path);
             }
         }
 
         AssetDatabase.Refresh();
 
         Debug.Log(
-            "Unused asset report created at: " +
+            "Report created: " +
             reportPath
         );
 
