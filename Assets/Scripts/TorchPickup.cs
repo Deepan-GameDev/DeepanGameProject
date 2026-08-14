@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class TorchPickup : MonoBehaviour, IPickup
 {
+    [Header("References")]
     public FlashlightController flashlightController;
     public GameObject flashlightButton;
     public GameObject playerTorchModel;
@@ -10,6 +11,7 @@ public class TorchPickup : MonoBehaviour, IPickup
 
     public void Pickup()
     {
+        // Play pickup sound
         if (pickupSound != null)
         {
             AudioSource.PlayClipAtPoint(
@@ -18,20 +20,32 @@ public class TorchPickup : MonoBehaviour, IPickup
             );
         }
 
-        flashlightController.EnableFlashlight();
+        // Enable player's flashlight
+        if (flashlightController != null)
+        {
+            flashlightController.EnableFlashlight();
+        }
 
-        flashlightButton.SetActive(true);
+        // Show flashlight button
+        if (flashlightButton != null)
+        {
+            flashlightButton.SetActive(true);
+        }
 
+        // Enable flashlight model on player
         if (playerTorchModel != null)
         {
             playerTorchModel.SetActive(true);
         }
 
+        // Complete torch objective
         if (objectiveManager != null)
         {
             objectiveManager.CompleteTorchObjective();
         }
 
+        // Destroy pickup object.
+        // Any child Point Light will also be destroyed automatically.
         Destroy(gameObject);
     }
 }
