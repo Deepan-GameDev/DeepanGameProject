@@ -43,6 +43,7 @@ private Coroutine warningCoroutine;
     private bool isOn = false;
     private bool hasFlashlight = false;
     private bool isFlickering = false;
+    private int displayedBatteryPercent = int.MinValue;
 
     void Start()
     {
@@ -145,7 +146,12 @@ private Coroutine warningCoroutine;
 
     if (batteryText != null)
     {
-        batteryText.text = Mathf.CeilToInt(currentBattery) + "%";
+        int batteryPercent = Mathf.CeilToInt(currentBattery);
+        if (displayedBatteryPercent != batteryPercent)
+        {
+            batteryText.text = batteryPercent + "%";
+            displayedBatteryPercent = batteryPercent;
+        }
     }
 
     UpdateLowBatteryWarning();
@@ -210,7 +216,8 @@ IEnumerator BlinkLowBatteryWarning()
 
         yield return new WaitForSeconds(warningBlinkSpeed);
 
-        lowBatteryText.SetActive(false);
+        if (lowBatteryText.activeSelf)
+            lowBatteryText.SetActive(false);
 
         yield return new WaitForSeconds(warningBlinkSpeed);
     }
