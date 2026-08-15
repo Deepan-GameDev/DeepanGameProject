@@ -11,8 +11,9 @@ public class KeyPickup : MonoBehaviour, IPickup
         Room5,
         ExitDoor
     }
+
     [Header("Zombie Spawn")]
-public GameObject zombie;
+    public GameObject zombie;
 
     [Header("Key Settings")]
     public KeyType keyType;
@@ -23,42 +24,60 @@ public GameObject zombie;
     public ObjectiveManager objectiveManager;
 
     private void Start()
-{
-    switch (keyType)
     {
-        case KeyType.Room1:
-            if (PlayerPrefs.GetInt("Room1Key", 0) == 1)
-            {
-                if (zombie != null)
+        switch (keyType)
+        {
+            case KeyType.Room1:
+
+                if (PlayerPrefs.GetInt("Room1Key", 0) == 1)
                 {
-                    zombie.SetActive(true);
+                    if (zombie != null)
+                    {
+                        zombie.SetActive(true);
+                    }
+
+                    Destroy(gameObject);
                 }
 
-                Destroy(gameObject);
-            }
-            break;
+                break;
 
-        case KeyType.Room2:
-            if (PlayerPrefs.GetInt("Room2Key", 0) == 1)
-                Destroy(gameObject);
-            break;
+            case KeyType.Room2:
 
-        case KeyType.Room3:
-            if (PlayerPrefs.GetInt("Room3Key", 0) == 1)
-                Destroy(gameObject);
-            break;
+                if (PlayerPrefs.GetInt("Room2Key", 0) == 1)
+                {
+                    Destroy(gameObject);
+                }
 
-        case KeyType.Room4:
-            if (PlayerPrefs.GetInt("Room4Key", 0) == 1)
-                Destroy(gameObject);
-            break;
+                break;
 
-        case KeyType.Room5:
-            if (PlayerPrefs.GetInt("Room5Key", 0) == 1)
-                Destroy(gameObject);
-            break;
+            case KeyType.Room3:
+
+                if (PlayerPrefs.GetInt("Room3Key", 0) == 1)
+                {
+                    Destroy(gameObject);
+                }
+
+                break;
+
+            case KeyType.Room4:
+
+                if (PlayerPrefs.GetInt("Room4Key", 0) == 1)
+                {
+                    Destroy(gameObject);
+                }
+
+                break;
+
+            case KeyType.Room5:
+
+                if (PlayerPrefs.GetInt("Room5Key", 0) == 1)
+                {
+                    Destroy(gameObject);
+                }
+
+                break;
+        }
     }
-}
 
     public void Pickup()
     {
@@ -70,82 +89,140 @@ public GameObject zombie;
         if (playerInventory == null)
             return;
 
+        // --------------------------------------------------
+        // KEY PICKUP
+        // --------------------------------------------------
+
         switch (keyType)
         {
             case KeyType.Room1:
 
-    playerInventory.AddRoom1Key();
+                playerInventory.AddRoom1Key();
 
-    if (zombie != null)
-    {
-        zombie.SetActive(true);
-    }
+                // Spawn zombie after Room 1 key is collected
+                if (zombie != null)
+                {
+                    zombie.SetActive(true);
+                }
 
-    SaveManager.SaveCheckpoint(playerInventory.transform);
+                // Save checkpoint at Room 1 Key pickup location
+                SaveManager.SaveCheckpoint(playerInventory.transform);
 
-    break;
+                break;
+
 
             case KeyType.Room2:
+
                 playerInventory.AddRoom2Key();
+
+                // Update checkpoint to Room 2 Key location
+                SaveManager.SaveCheckpoint(playerInventory.transform);
+
                 break;
+
 
             case KeyType.Room3:
+
                 playerInventory.AddRoom3Key();
+
+                // Update checkpoint to Room 3 Key location
+                SaveManager.SaveCheckpoint(playerInventory.transform);
+
                 break;
+
 
             case KeyType.Room4:
+
                 playerInventory.AddRoom4Key();
+
+                // Update checkpoint to Room 4 Key location
+                SaveManager.SaveCheckpoint(playerInventory.transform);
+
                 break;
 
+
             case KeyType.Room5:
+
                 playerInventory.AddRoom5Key();
-                break;       
+
+                // Update checkpoint to Room 5 Key location
+                SaveManager.SaveCheckpoint(playerInventory.transform);
+
+                break;
+
+
+            case KeyType.ExitDoor:
+
+                // No checkpoint update for Exit Door
+                break;
         }
+
+
+        // --------------------------------------------------
+        // PICKUP SOUND
+        // --------------------------------------------------
 
         if (pickupSound != null)
         {
-            AudioSource.PlayClipAtPoint(pickupSound, transform.position);
+            AudioSource.PlayClipAtPoint(
+                pickupSound,
+                transform.position
+            );
         }
+
+
+        // --------------------------------------------------
+        // KEY MESSAGE
+        // --------------------------------------------------
 
         if (gameMessageUI != null)
         {
-            if (gameMessageUI != null)
-{
-    string message = "";
+            string message = "";
 
-    switch (keyType)
-    {
-        case KeyType.Room1:
-            message = "ROOM 1 KEY FOUND";
-            break;
+            switch (keyType)
+            {
+                case KeyType.Room1:
+                    message = "ROOM 1 KEY FOUND";
+                    break;
 
-        case KeyType.Room2:
-            message = "ROOM 2 KEY FOUND";
-            break;
+                case KeyType.Room2:
+                    message = "ROOM 2 KEY FOUND";
+                    break;
 
-        case KeyType.Room3:
-            message = "ROOM 3 KEY FOUND";
-            break;
+                case KeyType.Room3:
+                    message = "ROOM 3 KEY FOUND";
+                    break;
 
-        case KeyType.Room4:
-            message = "ROOM 4 KEY FOUND";
-            break;
+                case KeyType.Room4:
+                    message = "ROOM 4 KEY FOUND";
+                    break;
 
-        case KeyType.Room5:
-            message = "ROOM 5 KEY FOUND";
-            break;
-    }
+                case KeyType.Room5:
+                    message = "ROOM 5 KEY FOUND";
+                    break;
+            }
 
-    gameMessageUI.ShowMessage(message);
-}
+            if (!string.IsNullOrEmpty(message))
+            {
+                gameMessageUI.ShowMessage(message);
+            }
         }
-        
+
+
+        // --------------------------------------------------
+        // OBJECTIVE
+        // --------------------------------------------------
+
         if (objectiveManager != null)
         {
             objectiveManager.CompleteKeyObjective();
         }
 
+
+        // --------------------------------------------------
+        // DESTROY PICKED KEY
+        // --------------------------------------------------
+
         Destroy(gameObject);
     }
-
 }

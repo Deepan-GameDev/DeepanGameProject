@@ -56,16 +56,26 @@ public static class SaveManager
         return PlayerPrefs.GetInt(key, 0) == 1;
     }
 
-    public static void SaveCheckpoint(Transform player)
+    // Called when the player reaches a new checkpoint.
+    public static void SaveCheckpoint(Transform checkpoint)
     {
-        if (player == null) return;
+        if (checkpoint == null)
+            return;
 
         PlayerPrefs.SetInt("HasSave", 1);
-        PlayerPrefs.SetFloat("PlayerX", player.position.x);
-        PlayerPrefs.SetFloat("PlayerY", player.position.y);
-        PlayerPrefs.SetFloat("PlayerZ", player.position.z);
-        PlayerPrefs.SetFloat("PlayerRotY", player.eulerAngles.y);
+
+        PlayerPrefs.SetFloat("PlayerX", checkpoint.position.x);
+        PlayerPrefs.SetFloat("PlayerY", checkpoint.position.y);
+        PlayerPrefs.SetFloat("PlayerZ", checkpoint.position.z);
+
+        PlayerPrefs.SetFloat("PlayerRotY", checkpoint.eulerAngles.y);
+
         PlayerPrefs.Save();
+    }
+
+    public static bool HasCheckpoint()
+    {
+        return PlayerPrefs.GetInt("HasSave", 0) == 1;
     }
 
     public static Vector3 LoadCheckpointPosition(Vector3 fallback)
@@ -73,7 +83,8 @@ public static class SaveManager
         return new Vector3(
             PlayerPrefs.GetFloat("PlayerX", fallback.x),
             PlayerPrefs.GetFloat("PlayerY", fallback.y),
-            PlayerPrefs.GetFloat("PlayerZ", fallback.z));
+            PlayerPrefs.GetFloat("PlayerZ", fallback.z)
+        );
     }
 
     public static Quaternion LoadCheckpointRotation(Quaternion fallback)
@@ -81,7 +92,8 @@ public static class SaveManager
         return Quaternion.Euler(
             fallback.eulerAngles.x,
             PlayerPrefs.GetFloat("PlayerRotY", fallback.eulerAngles.y),
-            fallback.eulerAngles.z);
+            fallback.eulerAngles.z
+        );
     }
 
     public static void DeleteSave()
