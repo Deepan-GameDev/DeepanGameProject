@@ -3,223 +3,261 @@ using UnityEngine;
 public class BreakablePot : MonoBehaviour, IInteractable
 {
     [Header("References")]
-    public Rigidbody rb;
-    public ParticleSystem breakEffect;
-    public ParticleSystem breakDust;
-    public AudioSource audioSource;
-    public AudioClip breakSound;
+    [SerializeField] private Rigidbody rb;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip breakSound;
 
-    [Header("Knock Settings")]
-    public float knockForce = 2.5f;
-    public float upwardForce = 0.4f;
-    public float breakVelocity = 1.0f;
+    [Header("Broken Replacement")]
+    [Tooltip("Assign the broken-pot PREFAB here.")]
+    [SerializeField] private GameObject replacementPrefab;
 
-    private bool knocked = false;
-    private bool broken = false;
+    [Header("Break Physics")]
+    [SerializeField] private float explosionForce = 2.5f;
+    [SerializeField] private float explosionRadius = 1.5f;
+    [SerializeField] private float upwardForce = 0.35f;
+
+    private bool broken;
+
+    private Renderer[] originalRenderers;
+    private Collider[] originalColliders;
 
     private void Awake()
     {
         if (rb == null)
+        {
             rb = GetComponent<Rigidbody>();
+        }
 
         if (rb != null)
         {
             rb.isKinematic = true;
-            rb.useGravity = true;
+            rb.useGravity = false;
         }
+
+        CacheOriginalComponents();
     }
 
-    // Called by your existing InteractionManager
+    // ---------------------------------------------------------
+    // INTERACTION
+    // ---------------------------------------------------------
+
     public void Interact()
     {
-        if (knocked || broken)
-            return;
-
-        KnockPot();
-    }
-
-    private void KnockPot()
-    {
-        knocked = true;
-
-        if (rb == null)
-            return;
-
-        rb.isKinematic = false;
-
-        // Push the pot forward
-        Vector3 direction = transform.forward;
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude < 0.01f)
-            direction = Vector3.forward;
-
-        direction.Normalize();
-
-        rb.AddForce(
-            direction * knockForce +
-            Vector3.up * upwardForce,
-            ForceMode.Impulse
-        );
-
-        // Make the pot fall / roll
-        rb.AddTorque(
-            Random.insideUnitSphere * 2f,
-            ForceMode.Impulse
-        );
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (!knocked || broken)
-            return;
-
-        bool hitFloor = false;
-
-        // Check whether the collision surface is a floor
-        for (int i = 0; i < collision.contactCount; i++)
+        if (broken)
         {
-            ContactPoint contact = collision.GetContact(i);
-
-            if (contact.normal.y > 0.5f)
-            {
-                hitFloor = true;
-                break;
-            }
+            return;
         }
 
-        if (!hitFloor)
-            return;
-
-        float impactSpeed = collision.relativeVelocity.magnitude;
-
-        if (impactSpeed >= breakVelocity)
-        {
-            BreakPot(collision);
-        }
+        BreakObject();
     }
 
-    private void BreakPot(Collision collision)
+    // ---------------------------------------------------------
+    // BREAK
+    // ---------------------------------------------------------
+
+    private void BreakObject()
     {
         if (broken)
+        {
             return;
+        }
 
         broken = true;
 
-        Debug.Log("POT BROKEN!");
+        Vector3 potPosition = transform.position;
+        Quaternion potRotation = transform.rotation;
 
-        // --------------------------------------------------
-        // BREAK SOUND
-        // --------------------------------------------------
-
+        // Break sound
         if (audioSource != null && breakSound != null)
         {
             audioSource.PlayOneShot(breakSound);
         }
-        else
-        {
-            Debug.LogWarning(
-                "BreakablePot: AudioSource or BreakSound is not assigned."
-            );
-        }
 
-        // --------------------------------------------------
-        // BREAK EFFECT
-        // --------------------------------------------------
+        // Spawn broken pieces
+        ShowBrokenPot(potPosition, potRotation);
 
-        if (breakEffect != null)
-        {
-            breakEffect.transform.SetParent(null);
+        // Hide original intact pot
+        HideOriginal();
 
-            breakEffect.transform.position = transform.position;
-            breakEffect.transform.rotation = Quaternion.identity;
-
-            breakEffect.gameObject.SetActive(true);
-
-            breakEffect.Clear();
-            breakEffect.Play();
-
-            var main = breakEffect.main;
-
-            Destroy(
-                breakEffect.gameObject,
-                main.duration + main.startLifetime.constantMax + 1f
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "BreakablePot: Break Effect is not assigned."
-            );
-        }
-
-        // --------------------------------------------------
-        // FLOOR DUST
-        // --------------------------------------------------
-
-        if (breakDust != null)
-        {
-            Vector3 dustPosition = transform.position;
-
-            // Find the actual floor contact position
-            if (collision.contactCount > 0)
-            {
-                dustPosition = collision.GetContact(0).point;
-            }
-
-            breakDust.transform.SetParent(null);
-
-            breakDust.transform.position = dustPosition;
-            breakDust.transform.rotation = Quaternion.identity;
-
-            breakDust.gameObject.SetActive(true);
-
-            breakDust.Clear();
-            breakDust.Play();
-
-            var dustMain = breakDust.main;
-
-            Destroy(
-                breakDust.gameObject,
-                dustMain.duration +
-                dustMain.startLifetime.constantMax +
-                1f
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "BreakablePot: Break Dust is not assigned."
-            );
-        }
-
-        // --------------------------------------------------
-        // HIDE POT
-        // --------------------------------------------------
-
-        Renderer[] renderers =
-            GetComponentsInChildren<Renderer>();
-
-        foreach (Renderer renderer in renderers)
-        {
-            renderer.enabled = false;
-        }
-
-        // --------------------------------------------------
-        // DISABLE COLLIDERS
-        // --------------------------------------------------
-
-        Collider[] colliders =
-            GetComponentsInChildren<Collider>();
-
-        foreach (Collider collider in colliders)
-        {
-            collider.enabled = false;
-        }
-
+        // Keep original pot locked
         if (rb != null)
         {
             rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // BROKEN POT
+    // ---------------------------------------------------------
+
+    private void ShowBrokenPot(
+        Vector3 position,
+        Quaternion rotation)
+    {
+        if (replacementPrefab == null)
+        {
+            Debug.LogWarning(
+                "BreakablePot: Replacement Prefab is not assigned."
+            );
+
+            return;
+        }
+
+        GameObject brokenPot = Instantiate(
+            replacementPrefab,
+            position,
+            rotation
+        );
+
+        brokenPot.SetActive(true);
+
+        // Make all renderers visible
+        Renderer[] renderers =
+            brokenPot.GetComponentsInChildren<Renderer>(true);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].enabled = true;
+            }
+        }
+
+        // Setup every broken piece
+        Transform root = brokenPot.transform;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform piece = root.GetChild(i);
+
+            if (piece == null)
+            {
+                continue;
+            }
+
+            SetupBrokenPiece(
+                piece,
+                position
+            );
+        }
+    }
+
+    // ---------------------------------------------------------
+    // BROKEN PIECE PHYSICS
+    // ---------------------------------------------------------
+
+    private void SetupBrokenPiece(
+        Transform piece,
+        Vector3 explosionPosition)
+    {
+        GameObject pieceObject = piece.gameObject;
+
+        pieceObject.SetActive(true);
+
+        // -----------------------------------------------------
+        // COLLIDER
+        // -----------------------------------------------------
+
+        Collider pieceCollider =
+            pieceObject.GetComponent<Collider>();
+
+        if (pieceCollider == null)
+        {
+            MeshFilter meshFilter =
+                pieceObject.GetComponent<MeshFilter>();
+
+            if (meshFilter != null &&
+                meshFilter.sharedMesh != null)
+            {
+                MeshCollider meshCollider =
+                    pieceObject.AddComponent<MeshCollider>();
+
+                meshCollider.sharedMesh =
+                    meshFilter.sharedMesh;
+
+                meshCollider.convex = true;
+            }
+            else
+            {
+                pieceObject.AddComponent<BoxCollider>();
+            }
+        }
+
+        // -----------------------------------------------------
+        // RIGIDBODY
+        // -----------------------------------------------------
+
+        Rigidbody pieceRb =
+            pieceObject.GetComponent<Rigidbody>();
+
+        if (pieceRb == null)
+        {
+            pieceRb = pieceObject.AddComponent<Rigidbody>();
+        }
+
+        pieceRb.isKinematic = false;
+        pieceRb.useGravity = true;
+
+        // Mobile-friendly physics
+        pieceRb.mass = 0.25f;
+        pieceRb.linearDamping = 0.1f;
+        pieceRb.angularDamping = 0.2f;
+
+        // -----------------------------------------------------
+        // EXPLOSION FORCE
+        // -----------------------------------------------------
+
+        pieceRb.AddExplosionForce(
+            explosionForce,
+            explosionPosition,
+            explosionRadius,
+            upwardForce,
+            ForceMode.Impulse
+        );
+
+        // Random rotation
+        pieceRb.AddTorque(
+            Random.insideUnitSphere * 1.5f,
+            ForceMode.Impulse
+        );
+    }
+
+    // ---------------------------------------------------------
+    // ORIGINAL POT
+    // ---------------------------------------------------------
+
+    private void CacheOriginalComponents()
+    {
+        originalRenderers =
+            GetComponentsInChildren<Renderer>(true);
+
+        originalColliders =
+            GetComponentsInChildren<Collider>(true);
+    }
+
+    private void HideOriginal()
+    {
+        if (originalRenderers != null)
+        {
+            for (int i = 0; i < originalRenderers.Length; i++)
+            {
+                if (originalRenderers[i] != null)
+                {
+                    originalRenderers[i].enabled = false;
+                }
+            }
+        }
+
+        if (originalColliders != null)
+        {
+            for (int i = 0; i < originalColliders.Length; i++)
+            {
+                if (originalColliders[i] != null)
+                {
+                    originalColliders[i].enabled = false;
+                }
+            }
         }
     }
 }
