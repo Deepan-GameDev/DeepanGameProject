@@ -4,22 +4,29 @@ public class BreakablePot : MonoBehaviour, IInteractable
 {
     [Header("References")]
     [SerializeField] private Rigidbody rb;
-    [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip breakSound;
 
     [Header("Broken Replacement")]
     [Tooltip("Assign the broken-pot PREFAB here.")]
     [SerializeField] private GameObject replacementPrefab;
 
+    [Header("Object After Break")]
+    [Tooltip("This GameObject will appear when the pot breaks.")]
+    [SerializeField] private GameObject objectAfterBreak;
+
     [Header("Break Physics")]
     [SerializeField] private float explosionForce = 2.5f;
     [SerializeField] private float explosionRadius = 1.5f;
     [SerializeField] private float upwardForce = 0.35f;
 
+    [Header("Broken Object Cleanup")]
+    [SerializeField] private float brokenObjectLifetime = 2f;
+
     private bool broken;
 
-    private Renderer[] originalRenderers;
-    private Collider[] originalColliders;
+    // ---------------------------------------------------------
+    // UNITY
+    // ---------------------------------------------------------
 
     private void Awake()
     {
@@ -28,13 +35,18 @@ public class BreakablePot : MonoBehaviour, IInteractable
             rb = GetComponent<Rigidbody>();
         }
 
+        // Keep original intact pot fixed
         if (rb != null)
         {
             rb.isKinematic = true;
             rb.useGravity = false;
         }
 
-        CacheOriginalComponents();
+        // Keep the object hidden until the pot breaks
+        if (objectAfterBreak != null)
+        {
+            objectAfterBreak.SetActive(false);
+        }
     }
 
     // ---------------------------------------------------------
@@ -52,7 +64,7 @@ public class BreakablePot : MonoBehaviour, IInteractable
     }
 
     // ---------------------------------------------------------
-    // BREAK
+    // BREAK OBJECT
     // ---------------------------------------------------------
 
     private void BreakObject()
@@ -67,31 +79,48 @@ public class BreakablePot : MonoBehaviour, IInteractable
         Vector3 potPosition = transform.position;
         Quaternion potRotation = transform.rotation;
 
-        // Break sound
-        if (audioSource != null && breakSound != null)
+        // -----------------------------------------------------
+        // BREAK SOUND
+        // -----------------------------------------------------
+
+        if (breakSound != null)
         {
-            audioSource.PlayOneShot(breakSound);
+            AudioSource.PlayClipAtPoint(
+                breakSound,
+                potPosition
+            );
         }
 
-        // Spawn broken pieces
-        ShowBrokenPot(potPosition, potRotation);
+        // -----------------------------------------------------
+        // SPAWN BROKEN POT
+        // -----------------------------------------------------
 
-        // Hide original intact pot
-        HideOriginal();
+        GameObject brokenPot = ShowBrokenPot(
+            potPosition,
+            potRotation
+        );
 
-        // Keep original pot locked
-        if (rb != null)
+        // -----------------------------------------------------
+        // SHOW OBJECT AFTER BREAK
+        // -----------------------------------------------------
+
+        if (objectAfterBreak != null)
         {
-            rb.isKinematic = true;
-            rb.useGravity = false;
+            objectAfterBreak.SetActive(true);
         }
+
+        // -----------------------------------------------------
+        // DESTROY ORIGINAL INTACT POT
+        // -----------------------------------------------------
+
+        Destroy(gameObject);
     }
 
     // ---------------------------------------------------------
     // BROKEN POT
     // ---------------------------------------------------------
 
-    private void ShowBrokenPot(
+    private GameObject ShowBrokenPot(
         Vector3 position,
         Quaternion rotation)
     {
@@ -101,7 +130,7 @@ public class BreakablePot : MonoBehaviour, IInteractable
                 "BreakablePot: Replacement Prefab is not assigned."
             );
 
-            return;
+            return null;
         }
 
         GameObject brokenPot = Instantiate(
@@ -112,19 +141,48 @@ public class BreakablePot : MonoBehaviour, IInteractable
 
         brokenPot.SetActive(true);
 
-        // Make all renderers visible
+        // -----------------------------------------------------
+        // HIDE ONLY THE INTACT "Pot" CHILD
+        // -----------------------------------------------------
+
+        Transform intactPot =
+            brokenPot.transform.Find("Pot");
+
+        if (intactPot != null)
+        {
+            intactPot.gameObject.SetActive(false);
+        }
+
+        // -----------------------------------------------------
+        // ENABLE BROKEN PIECE RENDERERS
+        // -----------------------------------------------------
+
         Renderer[] renderers =
             brokenPot.GetComponentsInChildren<Renderer>(true);
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            if (renderers[i] != null)
+            Renderer renderer = renderers[i];
+
+            if (renderer == null)
             {
-                renderers[i].enabled = true;
+                continue;
             }
+
+            // Don't enable the hidden intact Pot
+            if (intactPot != null &&
+                renderer.transform.IsChildOf(intactPot))
+            {
+                continue;
+            }
+
+            renderer.enabled = true;
         }
 
-        // Setup every broken piece
+        // -----------------------------------------------------
+        // SETUP BROKEN PIECES
+        // -----------------------------------------------------
+
         Transform root = brokenPot.transform;
 
         for (int i = 0; i < root.childCount; i++)
@@ -136,11 +194,29 @@ public class BreakablePot : MonoBehaviour, IInteractable
                 continue;
             }
 
+            // Skip intact Pot
+            if (intactPot != null &&
+                piece == intactPot)
+            {
+                continue;
+            }
+
             SetupBrokenPiece(
                 piece,
                 position
             );
         }
+
+        // -----------------------------------------------------
+        // DESTROY BROKEN POT AFTER 2 SECONDS
+        // -----------------------------------------------------
+
+        Destroy(
+            brokenPot,
+            brokenObjectLifetime
+        );
+
+        return brokenPot;
     }
 
     // ---------------------------------------------------------
@@ -164,23 +240,23 @@ public class BreakablePot : MonoBehaviour, IInteractable
 
         if (pieceCollider == null)
         {
-            MeshFilter meshFilter =
-                pieceObject.GetComponent<MeshFilter>();
-
-            if (meshFilter != null &&
-                meshFilter.sharedMesh != null)
-            {
-                MeshCollider meshCollider =
-                    pieceObject.AddComponent<MeshCollider>();
-
-                meshCollider.sharedMesh =
-                    meshFilter.sharedMesh;
-
-                meshCollider.convex = true;
-            }
-            else
-            {
+            // BoxCollider avoids problematic convex MeshCollider
+            BoxCollider boxCollider =
                 pieceObject.AddComponent<BoxCollider>();
+
+            Renderer pieceRenderer =
+                pieceObject.GetComponent<Renderer>();
+
+            if (pieceRenderer != null)
+            {
+                Bounds bounds =
+                    pieceRenderer.localBounds;
+
+                boxCollider.center =
+                    bounds.center;
+
+                boxCollider.size =
+                    bounds.size;
             }
         }
 
@@ -193,7 +269,8 @@ public class BreakablePot : MonoBehaviour, IInteractable
 
         if (pieceRb == null)
         {
-            pieceRb = pieceObject.AddComponent<Rigidbody>();
+            pieceRb =
+                pieceObject.AddComponent<Rigidbody>();
         }
 
         pieceRb.isKinematic = false;
@@ -216,48 +293,13 @@ public class BreakablePot : MonoBehaviour, IInteractable
             ForceMode.Impulse
         );
 
-        // Random rotation
+        // -----------------------------------------------------
+        // RANDOM ROTATION
+        // -----------------------------------------------------
+
         pieceRb.AddTorque(
             Random.insideUnitSphere * 1.5f,
             ForceMode.Impulse
         );
-    }
-
-    // ---------------------------------------------------------
-    // ORIGINAL POT
-    // ---------------------------------------------------------
-
-    private void CacheOriginalComponents()
-    {
-        originalRenderers =
-            GetComponentsInChildren<Renderer>(true);
-
-        originalColliders =
-            GetComponentsInChildren<Collider>(true);
-    }
-
-    private void HideOriginal()
-    {
-        if (originalRenderers != null)
-        {
-            for (int i = 0; i < originalRenderers.Length; i++)
-            {
-                if (originalRenderers[i] != null)
-                {
-                    originalRenderers[i].enabled = false;
-                }
-            }
-        }
-
-        if (originalColliders != null)
-        {
-            for (int i = 0; i < originalColliders.Length; i++)
-            {
-                if (originalColliders[i] != null)
-                {
-                    originalColliders[i].enabled = false;
-                }
-            }
-        }
     }
 }
