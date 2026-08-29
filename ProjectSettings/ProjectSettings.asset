@@ -937,11 +937,11 @@ PlayerSettings:
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: 815cdf89-198f-496d-bcb4-3fedda0e6b45
+  cloudProjectId: faaeceb0-94bd-41ce-85bd-7338567516b0
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Ghost asset
-  organizationId: balahariharan018
+  projectName: DS - The Curse
+  organizationId: deycronstudios
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

@@ -137,6 +137,15 @@ private Coroutine warningCoroutine;
         UpdateBatteryUI();
     }
 
+    public void RechargeBattery()
+    {
+        currentBattery = maxBattery;
+
+        UpdateBatteryUI();
+
+        Debug.Log("[Flashlight] Battery fully recharged.");
+    }
+
     void UpdateBatteryUI()
 {
     if (batterySlider != null)

@@ -92,6 +92,37 @@ public class GameOverManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    public void RevivePlayer()
+    {
+        Time.timeScale = 1f;
+
+        isGameOver = false;
+
+        if (player != null)
+        {
+            player.enabled = true;
+        }
+
+        if (gameplayUI != null)
+        {
+            gameplayUI.SetActive(true);
+        }
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
+
+        if (gameOverCanvasGroup != null)
+        {
+            gameOverCanvasGroup.alpha = 0f;
+            gameOverCanvasGroup.interactable = false;
+            gameOverCanvasGroup.blocksRaycasts = false;
+        }
+
+        Debug.Log("[GameOver] Player revived.");
+    }
+
     public void RestartGame()
     {
         Time.timeScale = 1f;
