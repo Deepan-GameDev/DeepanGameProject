@@ -15,37 +15,41 @@ public class RewardedAdButtons : MonoBehaviour
 
     private void Start()
     {
-        // Initially hide both buttons.
+        // Hide buttons at start.
         if (reviveButton != null)
             reviveButton.gameObject.SetActive(false);
 
         if (rechargeButton != null)
+        {
             rechargeButton.gameObject.SetActive(false);
+            rechargeButton.interactable = true;
+        }
 
-        // Subscribe to LevelPlay rewarded event.
+        // Subscribe to rewarded ad completion.
         if (LevelPlayAdsManager.Instance != null)
         {
             LevelPlayAdsManager.Instance.OnRewardedAdCompleted += OnRewardedAdCompleted;
         }
 
-        // Recharge button click.
+        // IMPORTANT:
+        // We intentionally do NOT use RemoveAllListeners().
+        // This prevents accidentally removing other button events.
         if (rechargeButton != null)
         {
-            rechargeButton.onClick.RemoveAllListeners();
+            rechargeButton.onClick.RemoveListener(OnRechargeButtonClicked);
             rechargeButton.onClick.AddListener(OnRechargeButtonClicked);
         }
     }
 
     private void Update()
     {
-        // Recharge can only appear when:
-        // 1. Battery is 0
-        // 2. Recharge has never been used
-        // 3. We are not currently waiting for an ad reward
-
         if (flashlightController == null || rechargeButton == null)
             return;
 
+        // Show recharge button ONLY when:
+        // - Battery is completely empty
+        // - Recharge has not already been used
+        // - No recharge ad is currently waiting for reward
         if (!rechargeUsed &&
             flashlightController.currentBattery <= 0f &&
             !waitingForRechargeReward)
@@ -54,24 +58,45 @@ public class RewardedAdButtons : MonoBehaviour
             {
                 rechargeButton.gameObject.SetActive(true);
             }
+
+            rechargeButton.interactable = true;
         }
         else
         {
             if (rechargeButton.gameObject.activeSelf &&
-                (rechargeUsed || flashlightController.currentBattery > 0f))
+                (rechargeUsed ||
+                 flashlightController.currentBattery > 0f ||
+                 waitingForRechargeReward))
             {
                 rechargeButton.gameObject.SetActive(false);
             }
         }
     }
 
+    // ============================================================
+    // RECHARGE
+    // ============================================================
+
+    // PUBLIC METHOD:
+    // Can also be assigned directly from Button -> On Click().
+    public void ShowRechargeAd()
+    {
+        OnRechargeButtonClicked();
+    }
+
     private void OnRechargeButtonClicked()
     {
         if (rechargeUsed)
+        {
+            Debug.Log("[Recharge] Recharge already used.");
             return;
+        }
 
         if (waitingForRechargeReward)
+        {
+            Debug.Log("[Recharge] Recharge ad is already pending.");
             return;
+        }
 
         if (LevelPlayAdsManager.Instance == null)
         {
@@ -81,9 +106,8 @@ public class RewardedAdButtons : MonoBehaviour
 
         if (!LevelPlayAdsManager.Instance.IsRewardedReady())
         {
-            Debug.LogWarning("[Recharge] Rewarded ad is not ready.");
+            Debug.LogWarning("[Recharge] Rewarded ad is not ready. Loading...");
 
-            // Try loading another rewarded ad.
             LevelPlayAdsManager.Instance.LoadRewarded();
 
             return;
@@ -93,38 +117,50 @@ public class RewardedAdButtons : MonoBehaviour
 
         waitingForRechargeReward = true;
 
-        // Disable button temporarily to prevent multiple clicks.
+        // Disable button while ad is being shown.
         rechargeButton.interactable = false;
 
         LevelPlayAdsManager.Instance.ShowRewarded();
     }
 
+    // ============================================================
+    // REWARDED CALLBACK
+    // ============================================================
+
     private void OnRewardedAdCompleted()
     {
+        // Ignore rewards that were not requested for recharge.
         if (!waitingForRechargeReward)
             return;
 
-        Debug.Log("[Recharge] Reward received. Recharging flashlight to 100%.");
+        Debug.Log("[Recharge] Reward received.");
 
         waitingForRechargeReward = false;
 
-        // ONE TIME USE
+        // ONE TIME USE.
         rechargeUsed = true;
 
-        // Recharge flashlight completely.
+        // Recharge flashlight to 100%.
         if (flashlightController != null)
         {
             flashlightController.AddBattery(
                 flashlightController.maxBattery
             );
+
+            Debug.Log(
+                "[Recharge] Flashlight recharged to " +
+                flashlightController.currentBattery + "%"
+            );
         }
 
-        // Permanently hide recharge button for this game session.
+        // Permanently hide recharge button.
         if (rechargeButton != null)
         {
             rechargeButton.interactable = false;
             rechargeButton.gameObject.SetActive(false);
         }
+
+        Debug.Log("[Recharge] Recharge used successfully.");
     }
 
     private void OnDestroy()
