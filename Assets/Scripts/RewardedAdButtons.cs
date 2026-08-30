@@ -1,102 +1,137 @@
 using UnityEngine;
-using UnityEngine.Events;
+using UnityEngine.UI;
 
 public class RewardedAdButtons : MonoBehaviour
 {
-    [Header("Reward Actions")]
-    [SerializeField] private UnityEvent onReviveRewarded;
-    [SerializeField] private UnityEvent onRechargeRewarded;
+    [Header("Buttons")]
+    [SerializeField] private Button reviveButton;
+    [SerializeField] private Button rechargeButton;
 
-    private enum RewardType
+    [Header("Game References")]
+    [SerializeField] private FlashlightController flashlightController;
+
+    private bool rechargeUsed = false;
+    private bool waitingForRechargeReward = false;
+
+    private void Start()
     {
-        None,
-        Revive,
-        Recharge
-    }
+        // Initially hide both buttons.
+        if (reviveButton != null)
+            reviveButton.gameObject.SetActive(false);
 
-    private RewardType pendingReward = RewardType.None;
+        if (rechargeButton != null)
+            rechargeButton.gameObject.SetActive(false);
 
-    private void OnEnable()
-    {
+        // Subscribe to LevelPlay rewarded event.
         if (LevelPlayAdsManager.Instance != null)
         {
-            LevelPlayAdsManager.Instance.OnRewardedAdCompleted += HandleRewardedAdCompleted;
+            LevelPlayAdsManager.Instance.OnRewardedAdCompleted += OnRewardedAdCompleted;
+        }
+
+        // Recharge button click.
+        if (rechargeButton != null)
+        {
+            rechargeButton.onClick.RemoveAllListeners();
+            rechargeButton.onClick.AddListener(OnRechargeButtonClicked);
         }
     }
 
-    private void OnDisable()
+    private void Update()
     {
-        if (LevelPlayAdsManager.Instance != null)
+        // Recharge can only appear when:
+        // 1. Battery is 0
+        // 2. Recharge has never been used
+        // 3. We are not currently waiting for an ad reward
+
+        if (flashlightController == null || rechargeButton == null)
+            return;
+
+        if (!rechargeUsed &&
+            flashlightController.currentBattery <= 0f &&
+            !waitingForRechargeReward)
         {
-            LevelPlayAdsManager.Instance.OnRewardedAdCompleted -= HandleRewardedAdCompleted;
+            if (!rechargeButton.gameObject.activeSelf)
+            {
+                rechargeButton.gameObject.SetActive(true);
+            }
+        }
+        else
+        {
+            if (rechargeButton.gameObject.activeSelf &&
+                (rechargeUsed || flashlightController.currentBattery > 0f))
+            {
+                rechargeButton.gameObject.SetActive(false);
+            }
         }
     }
 
-    // Connect this to Revive Button
-    public void ShowReviveAd()
+    private void OnRechargeButtonClicked()
     {
+        if (rechargeUsed)
+            return;
+
+        if (waitingForRechargeReward)
+            return;
+
         if (LevelPlayAdsManager.Instance == null)
         {
-            Debug.LogWarning("[RewardedAdButtons] LevelPlayAdsManager not found.");
+            Debug.LogWarning("[Recharge] LevelPlayAdsManager not found.");
             return;
         }
 
         if (!LevelPlayAdsManager.Instance.IsRewardedReady())
         {
-            Debug.LogWarning("[RewardedAdButtons] Revive rewarded ad is not ready.");
+            Debug.LogWarning("[Recharge] Rewarded ad is not ready.");
+
+            // Try loading another rewarded ad.
             LevelPlayAdsManager.Instance.LoadRewarded();
+
             return;
         }
 
-        pendingReward = RewardType.Revive;
+        Debug.Log("[Recharge] Showing rewarded ad for flashlight recharge.");
 
-        Debug.Log("[RewardedAdButtons] Showing Revive rewarded ad.");
+        waitingForRechargeReward = true;
+
+        // Disable button temporarily to prevent multiple clicks.
+        rechargeButton.interactable = false;
 
         LevelPlayAdsManager.Instance.ShowRewarded();
     }
 
-    // Connect this to Recharge Button
-    public void ShowRechargeAd()
+    private void OnRewardedAdCompleted()
     {
-        if (LevelPlayAdsManager.Instance == null)
-        {
-            Debug.LogWarning("[RewardedAdButtons] LevelPlayAdsManager not found.");
+        if (!waitingForRechargeReward)
             return;
+
+        Debug.Log("[Recharge] Reward received. Recharging flashlight to 100%.");
+
+        waitingForRechargeReward = false;
+
+        // ONE TIME USE
+        rechargeUsed = true;
+
+        // Recharge flashlight completely.
+        if (flashlightController != null)
+        {
+            flashlightController.AddBattery(
+                flashlightController.maxBattery
+            );
         }
 
-        if (!LevelPlayAdsManager.Instance.IsRewardedReady())
+        // Permanently hide recharge button for this game session.
+        if (rechargeButton != null)
         {
-            Debug.LogWarning("[RewardedAdButtons] Recharge rewarded ad is not ready.");
-            LevelPlayAdsManager.Instance.LoadRewarded();
-            return;
+            rechargeButton.interactable = false;
+            rechargeButton.gameObject.SetActive(false);
         }
-
-        pendingReward = RewardType.Recharge;
-
-        Debug.Log("[RewardedAdButtons] Showing Recharge rewarded ad.");
-
-        LevelPlayAdsManager.Instance.ShowRewarded();
     }
 
-    private void HandleRewardedAdCompleted()
+    private void OnDestroy()
     {
-        switch (pendingReward)
+        if (LevelPlayAdsManager.Instance != null)
         {
-            case RewardType.Revive:
-                Debug.Log("[RewardedAdButtons] Revive reward granted.");
-                onReviveRewarded?.Invoke();
-                break;
-
-            case RewardType.Recharge:
-                Debug.Log("[RewardedAdButtons] Recharge reward granted.");
-                onRechargeRewarded?.Invoke();
-                break;
-
-            default:
-                Debug.LogWarning("[RewardedAdButtons] Reward completed but no reward action was pending.");
-                break;
+            LevelPlayAdsManager.Instance.OnRewardedAdCompleted -= OnRewardedAdCompleted;
         }
-
-        pendingReward = RewardType.None;
     }
 }
