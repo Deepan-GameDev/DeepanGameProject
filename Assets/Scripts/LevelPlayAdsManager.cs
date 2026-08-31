@@ -29,8 +29,13 @@ public class LevelPlayAdsManager : MonoBehaviour
     private bool isInitialized;
     private bool isInitializing;
 
-    // This callback is fired when a rewarded ad is successfully completed.
+    // Used when button is clicked before rewarded ad is ready.
+    private bool pendingRewardedShow;
+    private bool rewardedShowInProgress;
+    private bool rewardedGrantedForCurrentShow;
+
     public event Action OnRewardedAdCompleted;
+    public event Action OnRewardedAdRequestFailed;
 
     private void Awake()
     {
@@ -49,6 +54,10 @@ public class LevelPlayAdsManager : MonoBehaviour
         InitializeLevelPlay();
     }
 
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+
     private void InitializeLevelPlay()
     {
         if (isInitialized || isInitializing)
@@ -65,7 +74,7 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlay.OnInitSuccess += OnLevelPlayInitialized;
         LevelPlay.OnInitFailed += OnLevelPlayInitializationFailed;
 
-        Debug.Log("[LevelPlay] Initializing SDK...");
+        Debug.Log("[LevelPlay] SDK initialization started");
 
         LevelPlay.Init(appKey);
     }
@@ -78,7 +87,7 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlay.OnInitSuccess -= OnLevelPlayInitialized;
         LevelPlay.OnInitFailed -= OnLevelPlayInitializationFailed;
 
-        Debug.Log("[LevelPlay] SDK initialized successfully.");
+        Debug.Log("[LevelPlay] SDK initialization SUCCESS");
 
         CreateInterstitial();
         CreateRewarded();
@@ -98,7 +107,8 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlay.OnInitSuccess -= OnLevelPlayInitialized;
         LevelPlay.OnInitFailed -= OnLevelPlayInitializationFailed;
 
-        Debug.LogError($"[LevelPlay] SDK initialization failed: {error}");
+        Debug.LogError("[LevelPlay] SDK initialization FAILED: " + error);
+        FailPendingRewardedRequest();
     }
 
     // ============================================================
@@ -118,7 +128,10 @@ public class LevelPlayAdsManager : MonoBehaviour
             .SetPlacementName("")
             .Build();
 
-        bannerAd = new LevelPlayBannerAd(bannerAdUnitId, config);
+        bannerAd = new LevelPlayBannerAd(
+            bannerAdUnitId,
+            config
+        );
 
         bannerAd.OnAdLoaded += OnBannerLoaded;
         bannerAd.OnAdLoadFailed += OnBannerLoadFailed;
@@ -136,26 +149,22 @@ public class LevelPlayAdsManager : MonoBehaviour
     {
         if (!isInitialized)
         {
-            Debug.LogWarning("[LevelPlay] Cannot load banner. SDK is not initialized.");
+            Debug.LogWarning("[LevelPlay] Cannot load banner. SDK not initialized.");
             return;
         }
 
         if (bannerAd == null)
-        {
             CreateBanner();
-        }
 
         Debug.Log("[LevelPlay] Loading banner...");
+
         bannerAd.LoadAd();
     }
 
     public void ShowBanner()
     {
         if (bannerAd == null)
-        {
-            Debug.LogWarning("[LevelPlay] Banner is not created.");
             return;
-        }
 
         bannerAd.ShowAd();
 
@@ -168,19 +177,6 @@ public class LevelPlayAdsManager : MonoBehaviour
             return;
 
         bannerAd.HideAd();
-
-        Debug.Log("[LevelPlay] Banner hidden.");
-    }
-
-    public void DestroyBanner()
-    {
-        if (bannerAd == null)
-            return;
-
-        bannerAd.DestroyAd();
-        bannerAd = null;
-
-        Debug.Log("[LevelPlay] Banner destroyed.");
     }
 
     private void OnBannerLoaded(LevelPlayAdInfo adInfo)
@@ -188,14 +184,12 @@ public class LevelPlayAdsManager : MonoBehaviour
         Debug.Log("[LevelPlay] Banner loaded.");
 
         if (showBannerOnStart)
-        {
             ShowBanner();
-        }
     }
 
     private void OnBannerLoadFailed(LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Banner load failed: {error}");
+        Debug.LogWarning("[LevelPlay] Banner load failed: " + error);
     }
 
     private void OnBannerDisplayed(LevelPlayAdInfo adInfo)
@@ -207,7 +201,7 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlayAdInfo adInfo,
         LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Banner display failed: {error}");
+        Debug.LogWarning("[LevelPlay] Banner display failed: " + error);
     }
 
     private void OnBannerClicked(LevelPlayAdInfo adInfo)
@@ -227,7 +221,7 @@ public class LevelPlayAdsManager : MonoBehaviour
 
     private void OnBannerLeftApplication(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("[LevelPlay] User left application from banner.");
+        Debug.Log("[LevelPlay] Banner left application.");
     }
 
     // ============================================================
@@ -239,7 +233,8 @@ public class LevelPlayAdsManager : MonoBehaviour
         if (interstitialAd != null)
             return;
 
-        interstitialAd = new LevelPlayInterstitialAd(interstitialAdUnitId);
+        interstitialAd =
+            new LevelPlayInterstitialAd(interstitialAdUnitId);
 
         interstitialAd.OnAdLoaded += OnInterstitialLoaded;
         interstitialAd.OnAdLoadFailed += OnInterstitialLoadFailed;
@@ -260,41 +255,38 @@ public class LevelPlayAdsManager : MonoBehaviour
             return;
 
         if (interstitialAd.IsAdReady())
-        {
-            Debug.Log("[LevelPlay] Interstitial already ready.");
             return;
-        }
 
         Debug.Log("[LevelPlay] Loading interstitial...");
+
         interstitialAd.LoadAd();
     }
 
     public bool IsInterstitialReady()
     {
-        if (interstitialAd == null)
-            return false;
-
-        return interstitialAd.IsAdReady();
+        return interstitialAd != null &&
+               interstitialAd.IsAdReady();
     }
 
     public void ShowInterstitial()
     {
         if (!isInitialized || interstitialAd == null)
         {
-            Debug.LogWarning("[LevelPlay] Interstitial is not initialized.");
+            Debug.LogWarning("[LevelPlay] Interstitial not initialized.");
             return;
         }
 
         if (!interstitialAd.IsAdReady())
         {
-            Debug.LogWarning("[LevelPlay] Interstitial is not ready.");
+            Debug.LogWarning("[LevelPlay] Interstitial not ready.");
             LoadInterstitial();
             return;
         }
 
-        if (LevelPlayInterstitialAd.IsPlacementCapped(interstitialPlacement))
+        if (LevelPlayInterstitialAd.IsPlacementCapped(
+            interstitialPlacement))
         {
-            Debug.LogWarning("[LevelPlay] Interstitial placement is capped.");
+            Debug.LogWarning("[LevelPlay] Interstitial placement capped.");
             return;
         }
 
@@ -310,7 +302,7 @@ public class LevelPlayAdsManager : MonoBehaviour
 
     private void OnInterstitialLoadFailed(LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Interstitial load failed: {error}");
+        Debug.LogWarning("[LevelPlay] Interstitial load failed: " + error);
     }
 
     private void OnInterstitialDisplayed(LevelPlayAdInfo adInfo)
@@ -322,7 +314,7 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlayAdInfo adInfo,
         LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Interstitial display failed: {error}");
+        Debug.LogWarning("[LevelPlay] Interstitial display failed: " + error);
 
         LoadInterstitial();
     }
@@ -336,7 +328,6 @@ public class LevelPlayAdsManager : MonoBehaviour
     {
         Debug.Log("[LevelPlay] Interstitial closed.");
 
-        // Prepare the next interstitial.
         LoadInterstitial();
     }
 
@@ -354,7 +345,8 @@ public class LevelPlayAdsManager : MonoBehaviour
         if (rewardedAd != null)
             return;
 
-        rewardedAd = new LevelPlayRewardedAd(rewardedAdUnitId);
+        rewardedAd =
+            new LevelPlayRewardedAd(rewardedAdUnitId);
 
         rewardedAd.OnAdLoaded += OnRewardedLoaded;
         rewardedAd.OnAdLoadFailed += OnRewardedLoadFailed;
@@ -365,7 +357,7 @@ public class LevelPlayAdsManager : MonoBehaviour
         rewardedAd.OnAdClicked += OnRewardedClicked;
         rewardedAd.OnAdInfoChanged += OnRewardedInfoChanged;
 
-        Debug.Log("[LevelPlay] Rewarded created.");
+        Debug.Log("[LevelPlay] Rewarded object created");
 
         LoadRewarded();
     }
@@ -373,73 +365,116 @@ public class LevelPlayAdsManager : MonoBehaviour
     public void LoadRewarded()
     {
         if (!isInitialized || rewardedAd == null)
-            return;
-
-        if (rewardedAd.IsAdReady())
         {
-            Debug.Log("[LevelPlay] Rewarded already ready.");
+            Debug.LogError(
+                "[LevelPlay] Rewarded LoadAd cannot run. " +
+                "SDK initialized=" + isInitialized +
+                ", rewarded object exists=" + (rewardedAd != null));
             return;
         }
 
-        Debug.Log("[LevelPlay] Loading rewarded...");
+        if (rewardedAd.IsAdReady())
+        {
+            Debug.Log("[LevelPlay] Rewarded already READY.");
+            return;
+        }
+
+        Debug.Log("[LevelPlay] Rewarded LoadAd requested");
 
         rewardedAd.LoadAd();
     }
 
     public bool IsRewardedReady()
     {
-        if (rewardedAd == null)
-            return false;
-
-        return rewardedAd.IsAdReady();
+        return rewardedAd != null &&
+               rewardedAd.IsAdReady();
     }
+
+    // ============================================================
+    // THIS IS THE IMPORTANT PART
+    // ============================================================
 
     public void ShowRewarded()
     {
-        if (!isInitialized || rewardedAd == null)
+        Debug.Log("[LevelPlay] Rewarded request received");
+
+        if (rewardedShowInProgress || pendingRewardedShow)
         {
-            Debug.LogWarning("[LevelPlay] Rewarded is not initialized.");
+            Debug.LogWarning("[LevelPlay] Rewarded request ignored; a request is already in progress.");
             return;
         }
 
-        if (!rewardedAd.IsAdReady())
+        if (!isInitialized)
         {
-            Debug.LogWarning("[LevelPlay] Rewarded is not ready.");
-            LoadRewarded();
+            if (isInitializing)
+            {
+                pendingRewardedShow = true;
+                Debug.Log("[LevelPlay] SDK is still initializing; rewarded request will continue after initialization.");
+                return;
+            }
+
+            Debug.LogError("[LevelPlay] Rewarded request failed: SDK is not initialized.");
+            FailPendingRewardedRequest();
             return;
         }
 
-        if (LevelPlayRewardedAd.IsPlacementCapped(rewardedPlacement))
+        if (rewardedAd == null)
         {
-            Debug.LogWarning("[LevelPlay] Rewarded placement is capped.");
+            Debug.LogError("[LevelPlay] Rewarded request failed: rewarded object is NULL.");
+            FailPendingRewardedRequest();
             return;
         }
 
-        Debug.Log("[LevelPlay] Showing rewarded...");
+        if (LevelPlayRewardedAd.IsPlacementCapped(
+            rewardedPlacement))
+        {
+            Debug.LogError("[LevelPlay] Rewarded request failed: placement is capped: " + rewardedPlacement);
+            FailPendingRewardedRequest();
+            return;
+        }
 
-        rewardedAd.ShowAd(rewardedPlacement);
+        bool isReady = rewardedAd.IsAdReady();
+        Debug.Log("[LevelPlay] Rewarded IsAdReady = " + (isReady ? "TRUE" : "FALSE"));
+
+        if (isReady)
+        {
+            ShowRewardedNow();
+            return;
+        }
+
+        pendingRewardedShow = true;
+        Debug.Log("[LevelPlay] Rewarded is not ready; loading and waiting to show.");
+        LoadRewarded();
     }
 
     private void OnRewardedLoaded(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("[LevelPlay] Rewarded loaded.");
+        Debug.Log("[LevelPlay] Rewarded LOADED");
+
+        if (pendingRewardedShow)
+        {
+            Debug.Log("[LevelPlay] Pending rewarded request detected; showing now.");
+            ShowRewardedNow();
+        }
     }
 
     private void OnRewardedLoadFailed(LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Rewarded load failed: {error}");
+        Debug.LogError("[LevelPlay] Rewarded LOAD FAILED: " + FormatAdError(error));
+        FailPendingRewardedRequest();
     }
 
     private void OnRewardedDisplayed(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("[LevelPlay] Rewarded displayed.");
+        Debug.Log("[LevelPlay] Rewarded DISPLAYED");
     }
 
     private void OnRewardedDisplayFailed(
         LevelPlayAdInfo adInfo,
         LevelPlayAdError error)
     {
-        Debug.LogWarning($"[LevelPlay] Rewarded display failed: {error}");
+        Debug.LogError("[LevelPlay] Rewarded DISPLAY FAILED: " + FormatAdError(error));
+        FailPendingRewardedRequest();
 
         LoadRewarded();
     }
@@ -448,20 +483,82 @@ public class LevelPlayAdsManager : MonoBehaviour
         LevelPlayAdInfo adInfo,
         LevelPlayReward reward)
     {
+        rewardedGrantedForCurrentShow = true;
+
         Debug.Log(
-            $"[LevelPlay] Reward earned: {reward.Name} x {reward.Amount}"
+            "[LevelPlay] Reward received: " +
+            reward.Name +
+            " x " +
+            reward.Amount
         );
 
-        // Notify the game that the player earned the reward.
         OnRewardedAdCompleted?.Invoke();
     }
 
     private void OnRewardedClosed(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("[LevelPlay] Rewarded closed.");
+        Debug.Log("[LevelPlay] Rewarded CLOSED");
 
-        // Prepare the next rewarded ad.
+        rewardedShowInProgress = false;
+
+        if (!rewardedGrantedForCurrentShow)
+        {
+            Debug.LogWarning("[LevelPlay] Rewarded closed without a reward; recharge remains available.");
+            OnRewardedAdRequestFailed?.Invoke();
+        }
+
+        // Load next rewarded ad for future use.
         LoadRewarded();
+    }
+
+    private void ShowRewardedNow()
+    {
+        if (rewardedAd == null)
+        {
+            Debug.LogError("[LevelPlay] Rewarded show failed: rewarded object is NULL.");
+            FailPendingRewardedRequest();
+            return;
+        }
+
+        if (LevelPlayRewardedAd.IsPlacementCapped(rewardedPlacement))
+        {
+            Debug.LogError("[LevelPlay] Rewarded show failed: placement is capped: " + rewardedPlacement);
+            FailPendingRewardedRequest();
+            return;
+        }
+
+        if (!rewardedAd.IsAdReady())
+        {
+            Debug.LogError("[LevelPlay] Rewarded show failed: IsAdReady became FALSE before ShowAd.");
+            pendingRewardedShow = true;
+            LoadRewarded();
+            return;
+        }
+
+        pendingRewardedShow = false;
+        rewardedShowInProgress = true;
+        rewardedGrantedForCurrentShow = false;
+        Debug.Log("[LevelPlay] Rewarded ShowAd requested");
+        rewardedAd.ShowAd(rewardedPlacement);
+    }
+
+    private void FailPendingRewardedRequest()
+    {
+        pendingRewardedShow = false;
+        rewardedShowInProgress = false;
+        OnRewardedAdRequestFailed?.Invoke();
+    }
+
+    private static string FormatAdError(LevelPlayAdError error)
+    {
+        if (error == null)
+            return "LevelPlayAdError was null.";
+
+        return "Code=" + error.ErrorCode +
+               ", Message=" + error.ErrorMessage +
+               ", AdUnitId=" + error.AdUnitId +
+               ", AdId=" + error.AdId +
+               ", Raw=" + error;
     }
 
     private void OnRewardedClicked(LevelPlayAdInfo adInfo)
@@ -521,8 +618,6 @@ public class LevelPlayAdsManager : MonoBehaviour
         }
 
         if (Instance == this)
-        {
             Instance = null;
-        }
     }
 }
