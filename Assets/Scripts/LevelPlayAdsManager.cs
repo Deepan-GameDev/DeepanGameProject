@@ -36,6 +36,7 @@ public class LevelPlayAdsManager : MonoBehaviour
 
     public event Action OnRewardedAdCompleted;
     public event Action OnRewardedAdRequestFailed;
+    public event Action OnInterstitialClosedEvent;
 
     private void Awake()
     {
@@ -324,10 +325,14 @@ public class LevelPlayAdsManager : MonoBehaviour
         Debug.Log("[LevelPlay] Interstitial clicked.");
     }
 
-    private void OnInterstitialClosed(LevelPlayAdInfo adInfo)
+        private void OnInterstitialClosed(LevelPlayAdInfo adInfo)
     {
-        Debug.Log("[LevelPlay] Interstitial closed.");
+        Debug.Log("[LevelPlay] Interstitial CLOSED");
 
+        // Tell GameOverManager that the ad has finished.
+        OnInterstitialClosedEvent?.Invoke();
+
+        // Prepare next interstitial.
         LoadInterstitial();
     }
 
