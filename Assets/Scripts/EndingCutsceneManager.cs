@@ -4,7 +4,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Owns only the post-escape ending cinematic. It does not alter gameplay systems.
+/// Owns only the post-escape ending cinematic.
+/// After the ending cinematic is completely finished,
+/// an interstitial ad is shown if ready.
+/// After the ad closes, the Main Menu is loaded.
 /// </summary>
 public class EndingCutsceneManager : MonoBehaviour
 {
@@ -40,10 +43,15 @@ public class EndingCutsceneManager : MonoBehaviour
     [SerializeField] private string mainMenuSceneName = "Main Menu";
 
     [Header("Gameplay Input")]
-[SerializeField] private GameObject gameplayUI;
+    [SerializeField] private GameObject gameplayUI;
+
+    [Header("Interstitial Ad")]
+    [SerializeField] private string interstitialPlacement = "Interstitial_Android";
 
     private bool hasBegun;
     private CanvasGroup continuationTextGroup;
+
+    private bool waitingForInterstitialClose;
 
     private void Awake()
     {
@@ -65,42 +73,101 @@ public class EndingCutsceneManager : MonoBehaviour
             return;
 
         hasBegun = true;
+
         StartCoroutine(PlayEnding(escapeCamera, escapeCanvasGroup));
     }
 
-    private IEnumerator PlayEnding(Camera escapeCamera, CanvasGroup escapeCanvasGroup)
+    private IEnumerator PlayEnding(
+        Camera escapeCamera,
+        CanvasGroup escapeCanvasGroup)
     {
-        // Time is explicitly restored so every cinematic step and UI fade advances.
+        // Make sure cinematic timing works normally.
         Time.timeScale = 1f;
 
         if (gameplayUI != null)
-    {
-        gameplayUI.SetActive(false);
-    }
+            gameplayUI.SetActive(false);
 
-        // The escape panel must remain untouched and fully visible before the ending begins.
-        yield return new WaitForSecondsRealtime(escapedPanelVisibleDuration);
+        // Keep the escape panel visible before the ending begins.
+        yield return new WaitForSecondsRealtime(
+            escapedPanelVisibleDuration
+        );
 
+        // Fade screen to black.
         yield return StartCoroutine(FadeToBlack());
+
+        // Hide escape panel.
         HideEscapePanel(escapeCanvasGroup);
-        yield return StartCoroutine(TransitionToEndingCamera(escapeCamera));
+
+        // Switch to ending camera.
+        yield return StartCoroutine(
+            TransitionToEndingCamera(escapeCamera)
+        );
+
+        // Prepare cinematic zombie while screen is black.
         PrepareZombie();
-        yield return new WaitForSecondsRealtime(blackCameraSwitchDelay);
+
+        yield return new WaitForSecondsRealtime(
+            blackCameraSwitchDelay
+        );
+
+        // Reveal ending camera.
         yield return StartCoroutine(FadeFromBlack());
 
         yield return new WaitForSecondsRealtime(revealPause);
+
         yield return new WaitForSecondsRealtime(pauseBeforeScream);
 
-        SetZombieAnimation(isWalking: false, isScreaming: true, moveSpeed: 0f);
-        if (zombieAudioSource != null && zombieScreamClip != null)
-            zombieAudioSource.PlayOneShot(zombieScreamClip);
+        // Zombie scream.
+        SetZombieAnimation(
+            isWalking: false,
+            isScreaming: true,
+            moveSpeed: 0f
+        );
 
+        if (zombieAudioSource != null && zombieScreamClip != null)
+        {
+            zombieAudioSource.PlayOneShot(zombieScreamClip);
+        }
+
+        // Keep existing scream timing behavior.
+        if (zombieScreamClip != null)
+        {
+            yield return new WaitForSecondsRealtime(
+                zombieScreamClip.length
+            );
+        }
+        else
+        {
+            yield return new WaitForSecondsRealtime(
+                fallbackScreamDuration
+            );
+        }
+
+        yield return new WaitForSecondsRealtime(pauseAfterScream);
+
+        // Fade to black after the ending cinematic.
         yield return StartCoroutine(FadeToBlack());
 
+        // Show "TO BE CONTINUED..."
         yield return StartCoroutine(FadeInContinuationText());
-        yield return new WaitForSecondsRealtime(continuationHoldDuration);
 
+        yield return new WaitForSecondsRealtime(
+            continuationHoldDuration
+        );
+
+        // =========================================================
+        // ENDING CUTSCENE IS NOW COMPLETELY FINISHED.
+        // ONLY NOW TRY TO SHOW THE INTERSTITIAL.
+        // =========================================================
+
+        yield return StartCoroutine(
+            ShowEndingInterstitialThenContinue()
+        );
+
+        // After the ad closes, or immediately if no ad is ready,
+        // continue to Main Menu.
         Time.timeScale = 1f;
+
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
@@ -109,57 +176,61 @@ public class EndingCutsceneManager : MonoBehaviour
         if (zombie == null)
             return;
 
-        // The gameplay zombie is intentionally inactive until its normal spawn event.
-        // The ending uses that same zombie, so it must be explicitly enabled here.
+        // Enable the zombie specifically for the ending.
         zombie.SetActive(true);
 
         if (zombieAI != null)
         {
             zombieAI.PrepareForEndingCutscene();
-            // The cinematic owns movement and rotation until the scene changes.
+
+            // Ending cinematic owns movement/rotation.
             zombieAI.enabled = false;
         }
 
         if (zombieAnimator != null)
-            zombieAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-
-        // This occurs while the screen is black, before the ending camera is revealed.
-        if (zombieStartPoint != null)
         {
-            zombie.transform.SetPositionAndRotation(zombieStartPoint.position, zombieStartPoint.rotation);
+            zombieAnimator.cullingMode =
+                AnimatorCullingMode.AlwaysAnimate;
         }
 
-        SetZombieAnimation(isWalking: false, isScreaming: false, moveSpeed: 0f);
+        // Position zombie at cinematic start point.
+        if (zombieStartPoint != null)
+        {
+            zombie.transform.SetPositionAndRotation(
+                zombieStartPoint.position,
+                zombieStartPoint.rotation
+            );
+        }
+
+        SetZombieAnimation(
+            isWalking: false,
+            isScreaming: false,
+            moveSpeed: 0f
+        );
     }
 
-    private IEnumerator TransitionToEndingCamera(Camera escapeCamera)
-{
-    // Make absolutely sure gameplay controls stay disabled.
-    if (gameplayUI != null)
+    private IEnumerator TransitionToEndingCamera(
+        Camera escapeCamera)
     {
-        gameplayUI.SetActive(false);
+        // Make absolutely sure gameplay controls stay disabled.
+        if (gameplayUI != null)
+            gameplayUI.SetActive(false);
+
+        if (escapeCamera != null)
+            escapeCamera.gameObject.SetActive(false);
+
+        if (endingCamera != null)
+            endingCamera.gameObject.SetActive(true);
+
+        yield return null;
+
+        // Safety check after camera switch.
+        if (gameplayUI != null)
+            gameplayUI.SetActive(false);
     }
 
-    if (escapeCamera != null)
-    {
-        escapeCamera.gameObject.SetActive(false);
-    }
-
-    if (endingCamera != null)
-    {
-        endingCamera.gameObject.SetActive(true);
-    }
-
-    yield return null;
-
-    // Safety check after camera switch.
-    if (gameplayUI != null)
-    {
-        gameplayUI.SetActive(false);
-    }
-}
-
-    private void HideEscapePanel(CanvasGroup escapeCanvasGroup)
+    private void HideEscapePanel(
+        CanvasGroup escapeCanvasGroup)
     {
         if (escapeCanvasGroup == null)
             return;
@@ -176,32 +247,73 @@ public class EndingCutsceneManager : MonoBehaviour
             yield break;
 
         Transform zombieTransform = zombie.transform;
-        Vector3 startPosition = zombieTransform.position;
-        Vector3 targetPosition = zombieStopPoint.position;
-        Vector3 direction = targetPosition - startPosition;
-        direction.y = 0f;
-        if (direction.sqrMagnitude > 0.0001f)
-            zombieTransform.rotation = Quaternion.LookRotation(direction);
 
-        SetZombieAnimation(isWalking: true, isScreaming: false, moveSpeed: 0.5f);
+        Vector3 startPosition =
+            zombieTransform.position;
+
+        Vector3 targetPosition =
+            zombieStopPoint.position;
+
+        Vector3 direction =
+            targetPosition - startPosition;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.0001f)
+        {
+            zombieTransform.rotation =
+                Quaternion.LookRotation(direction);
+        }
+
+        SetZombieAnimation(
+            isWalking: true,
+            isScreaming: false,
+            moveSpeed: 0.5f
+        );
 
         float elapsed = 0f;
+
         while (elapsed < zombieWalkDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = Smooth01(elapsed / zombieWalkDuration);
-            Vector3 nextPosition = Vector3.LerpUnclamped(startPosition, targetPosition, t);
-            Vector3 movement = nextPosition - zombieTransform.position;
+
+            float t =
+                Smooth01(elapsed / zombieWalkDuration);
+
+            Vector3 nextPosition =
+                Vector3.LerpUnclamped(
+                    startPosition,
+                    targetPosition,
+                    t
+                );
+
+            Vector3 movement =
+                nextPosition - zombieTransform.position;
+
             movement.y = 0f;
+
             if (movement.sqrMagnitude > 0.000001f)
-                zombieTransform.rotation = Quaternion.Slerp(zombieTransform.rotation, Quaternion.LookRotation(movement), 0.25f);
+            {
+                zombieTransform.rotation =
+                    Quaternion.Slerp(
+                        zombieTransform.rotation,
+                        Quaternion.LookRotation(movement),
+                        0.25f
+                    );
+            }
 
             zombieTransform.position = nextPosition;
+
             yield return null;
         }
 
         zombieTransform.position = targetPosition;
-        SetZombieAnimation(isWalking: false, isScreaming: false, moveSpeed: 0f);
+
+        SetZombieAnimation(
+            isWalking: false,
+            isScreaming: false,
+            moveSpeed: 0f
+        );
     }
 
     private IEnumerator TurnZombieToCamera()
@@ -209,19 +321,40 @@ public class EndingCutsceneManager : MonoBehaviour
         if (zombie == null || endingCamera == null)
             yield break;
 
-        Transform zombieTransform = zombie.transform;
-        Vector3 direction = endingCamera.transform.position - zombieTransform.position;
+        Transform zombieTransform =
+            zombie.transform;
+
+        Vector3 direction =
+            endingCamera.transform.position -
+            zombieTransform.position;
+
         direction.y = 0f;
+
         if (direction.sqrMagnitude < 0.0001f)
             yield break;
 
-        Quaternion fromRotation = zombieTransform.rotation;
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        Quaternion fromRotation =
+            zombieTransform.rotation;
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(direction);
+
         float elapsed = 0f;
+
         while (elapsed < zombieTurnToCameraDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            zombieTransform.rotation = Quaternion.Slerp(fromRotation, targetRotation, Smooth01(elapsed / zombieTurnToCameraDuration));
+
+            zombieTransform.rotation =
+                Quaternion.Slerp(
+                    fromRotation,
+                    targetRotation,
+                    Smooth01(
+                        elapsed /
+                        zombieTurnToCameraDuration
+                    )
+                );
+
             yield return null;
         }
 
@@ -235,11 +368,20 @@ public class EndingCutsceneManager : MonoBehaviour
 
         endingFadeCanvasGroup.gameObject.SetActive(true);
         endingFadeCanvasGroup.blocksRaycasts = true;
+
         float elapsed = 0f;
+
         while (elapsed < fadeToBlackDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            endingFadeCanvasGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / fadeToBlackDuration);
+
+            endingFadeCanvasGroup.alpha =
+                Mathf.Lerp(
+                    0f,
+                    1f,
+                    elapsed / fadeToBlackDuration
+                );
+
             yield return null;
         }
 
@@ -252,10 +394,19 @@ public class EndingCutsceneManager : MonoBehaviour
             yield break;
 
         float elapsed = 0f;
+
         while (elapsed < fadeIntoEndingCameraDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            endingFadeCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeIntoEndingCameraDuration);
+
+            endingFadeCanvasGroup.alpha =
+                Mathf.Lerp(
+                    1f,
+                    0f,
+                    elapsed /
+                    fadeIntoEndingCameraDuration
+                );
+
             yield return null;
         }
 
@@ -269,11 +420,21 @@ public class EndingCutsceneManager : MonoBehaviour
             yield break;
 
         continuationTextGroup.gameObject.SetActive(true);
+
         float elapsed = 0f;
+
         while (elapsed < continuationFadeInDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            continuationTextGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / continuationFadeInDuration);
+
+            continuationTextGroup.alpha =
+                Mathf.Lerp(
+                    0f,
+                    1f,
+                    elapsed /
+                    continuationFadeInDuration
+                );
+
             yield return null;
         }
 
@@ -282,48 +443,181 @@ public class EndingCutsceneManager : MonoBehaviour
 
     private void SetupContinuationText()
     {
-        if (toBeContinuedText == null && endingFadeCanvasGroup != null)
+        if (toBeContinuedText == null &&
+            endingFadeCanvasGroup != null)
         {
-            GameObject textObject = new GameObject("To Be Continued", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            textObject.transform.SetParent(endingFadeCanvasGroup.transform, false);
-            toBeContinuedText = textObject.GetComponent<TextMeshProUGUI>();
-            RectTransform rect = toBeContinuedText.rectTransform;
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(1200f, 140f);
-            toBeContinuedText.font = TMP_Settings.defaultFontAsset;
+            GameObject textObject =
+                new GameObject(
+                    "To Be Continued",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(TextMeshProUGUI)
+                );
+
+            textObject.transform.SetParent(
+                endingFadeCanvasGroup.transform,
+                false
+            );
+
+            toBeContinuedText =
+                textObject.GetComponent<TextMeshProUGUI>();
+
+            RectTransform rect =
+                toBeContinuedText.rectTransform;
+
+            rect.anchorMin =
+                new Vector2(0.5f, 0.5f);
+
+            rect.anchorMax =
+                new Vector2(0.5f, 0.5f);
+
+            rect.sizeDelta =
+                new Vector2(1200f, 140f);
+
+            toBeContinuedText.font =
+                TMP_Settings.defaultFontAsset;
+
             toBeContinuedText.fontSize = 54f;
-            toBeContinuedText.alignment = TextAlignmentOptions.Center;
-            toBeContinuedText.color = Color.white;
+
+            toBeContinuedText.alignment =
+                TextAlignmentOptions.Center;
+
+            toBeContinuedText.color =
+                Color.white;
         }
 
         if (toBeContinuedText == null)
             return;
 
-        toBeContinuedText.text = "TO BE CONTINUED...";
-        continuationTextGroup = toBeContinuedText.GetComponent<CanvasGroup>();
+        toBeContinuedText.text =
+            "TO BE CONTINUED...";
+
+        continuationTextGroup =
+            toBeContinuedText.GetComponent<CanvasGroup>();
+
         if (continuationTextGroup == null)
-            continuationTextGroup = toBeContinuedText.gameObject.AddComponent<CanvasGroup>();
+        {
+            continuationTextGroup =
+                toBeContinuedText.gameObject
+                    .AddComponent<CanvasGroup>();
+        }
+
         continuationTextGroup.alpha = 0f;
         continuationTextGroup.blocksRaycasts = false;
         continuationTextGroup.interactable = false;
         continuationTextGroup.gameObject.SetActive(false);
     }
 
-    private void SetZombieAnimation(bool isWalking, bool isScreaming, float moveSpeed)
+    private void SetZombieAnimation(
+        bool isWalking,
+        bool isScreaming,
+        float moveSpeed)
     {
         if (zombieAnimator == null)
             return;
 
-        zombieAnimator.SetBool("IsWalking", isWalking);
-        zombieAnimator.SetBool("IsChasing", false);
-        zombieAnimator.SetBool("IsScreaming", isScreaming);
-        zombieAnimator.SetFloat("MoveSpeed", moveSpeed);
+        zombieAnimator.SetBool(
+            "IsWalking",
+            isWalking
+        );
+
+        zombieAnimator.SetBool(
+            "IsChasing",
+            false
+        );
+
+        zombieAnimator.SetBool(
+            "IsScreaming",
+            isScreaming
+        );
+
+        zombieAnimator.SetFloat(
+            "MoveSpeed",
+            moveSpeed
+        );
+    }
+
+    // =========================================================
+    // ENDING INTERSTITIAL
+    // =========================================================
+
+    private IEnumerator ShowEndingInterstitialThenContinue()
+    {
+        LevelPlayAdsManager adsManager =
+            LevelPlayAdsManager.Instance;
+
+        // Safety: if Ads Manager doesn't exist,
+        // don't block the game from reaching Main Menu.
+        if (adsManager == null)
+        {
+            Debug.LogWarning(
+                "[Ending] LevelPlayAdsManager not found. " +
+                "Continuing to Main Menu."
+            );
+
+            yield break;
+        }
+
+        // Check whether an interstitial is ready.
+        if (!adsManager.IsInterstitialReady())
+        {
+            Debug.Log(
+                "[Ending] Interstitial is not ready. " +
+                "Continuing directly to Main Menu."
+            );
+
+            // Prepare the next ad for future use.
+            adsManager.LoadInterstitial();
+
+            yield break;
+        }
+
+        waitingForInterstitialClose = true;
+
+        adsManager.OnInterstitialClosedEvent +=
+            OnEndingInterstitialClosed;
+
+        Debug.Log(
+            "[Ending] Ending cutscene completed. " +
+            "Showing interstitial."
+        );
+
+        adsManager.ShowInterstitial();
+
+        // Wait until the interstitial closes.
+        while (waitingForInterstitialClose)
+        {
+            yield return null;
+        }
+
+        adsManager.OnInterstitialClosedEvent -=
+            OnEndingInterstitialClosed;
+    }
+
+    private void OnEndingInterstitialClosed()
+    {
+        Debug.Log(
+            "[Ending] Interstitial closed. " +
+            "Continuing to Main Menu."
+        );
+
+        waitingForInterstitialClose = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (LevelPlayAdsManager.Instance != null)
+        {
+            LevelPlayAdsManager.Instance.OnInterstitialClosedEvent -=
+                OnEndingInterstitialClosed;
+        }
     }
 
     private static float Smooth01(float value)
     {
         value = Mathf.Clamp01(value);
-        return value * value * (3f - 2f * value);
+
+        return value * value *
+               (3f - 2f * value);
     }
 }
