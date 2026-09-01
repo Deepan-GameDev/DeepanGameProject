@@ -480,20 +480,37 @@ public class LevelPlayAdsManager : MonoBehaviour
     }
 
     private void OnRewardedCompleted(
-        LevelPlayAdInfo adInfo,
-        LevelPlayReward reward)
-    {
-        rewardedGrantedForCurrentShow = true;
+    LevelPlayAdInfo adInfo,
+    LevelPlayReward reward)
+{
+    rewardedGrantedForCurrentShow = true;
 
-        Debug.Log(
-            "[LevelPlay] Reward received: " +
-            reward.Name +
-            " x " +
-            reward.Amount
-        );
+    Debug.Log(
+        "[LevelPlay] ============================="
+    );
 
-        OnRewardedAdCompleted?.Invoke();
-    }
+    Debug.Log(
+        "[LevelPlay] REWARD CALLBACK RECEIVED"
+    );
+
+    Debug.Log(
+        "[LevelPlay] Reward Name: " + reward.Name
+    );
+
+    Debug.Log(
+        "[LevelPlay] Reward Amount: " + reward.Amount
+    );
+
+    Debug.Log(
+        "[LevelPlay] Placement: " + adInfo.PlacementName
+    );
+
+    Debug.Log(
+        "[LevelPlay] ============================="
+    );
+
+    OnRewardedAdCompleted?.Invoke();
+}
 
     private void OnRewardedClosed(LevelPlayAdInfo adInfo)
     {
@@ -501,13 +518,20 @@ public class LevelPlayAdsManager : MonoBehaviour
 
         rewardedShowInProgress = false;
 
+        // IMPORTANT:
+        // Do NOT treat OnAdClosed as "no reward".
+        // OnAdRewarded and OnAdClosed are asynchronous.
+        // Rewarded callback is the only place where reward is granted.
+
         if (!rewardedGrantedForCurrentShow)
         {
-            Debug.LogWarning("[LevelPlay] Rewarded closed without a reward; recharge remains available.");
-            OnRewardedAdRequestFailed?.Invoke();
+            Debug.Log(
+                "[LevelPlay] Rewarded closed. " +
+                "Waiting for reward callback if it arrives asynchronously."
+            );
         }
 
-        // Load next rewarded ad for future use.
+        // Prepare next rewarded ad.
         LoadRewarded();
     }
 
